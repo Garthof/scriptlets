@@ -5,6 +5,7 @@ from scipy import ndimage
 from scipy import misc
 
 # Initialize constants
+noise_sigma = 10.0
 patch_size = 5                  # Must be an odd number
 h = 0.5
 sigma = 1.0
@@ -16,7 +17,7 @@ for y in xrange(-patch_size/2, patch_size/2 + 1):
     for x in xrange(-patch_size/2, patch_size/2 + 1):
         gauss_val = x*x + y*y
         gauss_val = math.exp(-gauss_val / (2.0 * sigma * sigma))
-        gauss_val = gauss_val / math.sqrt(2.0 * math.pi * sigma * sigma)
+        gauss_val = gauss_val / (2.0 * math.pi * sigma * sigma)
 
         gauss_kernel[x + patch_size/2, y + patch_size/2] = gauss_val
 
@@ -113,8 +114,10 @@ def main():
     misc.imsave("orig.png", orig_img)
 
     print "Generating noisy image..."
-    noisy_img   = orig_img \
-                + 0.4 * orig_img.std() * np.random.random(orig_img.shape)
+    print "Noise standard deviation: %1.5f" % noise_sigma
+
+    noise = np.random.normal(scale=noise_sigma, size=orig_img.size).reshape(orig_img.shape)
+    noisy_img = orig_img + noise
 
     misc.imsave("noisy.png", noisy_img)
 
