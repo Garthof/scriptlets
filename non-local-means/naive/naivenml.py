@@ -48,7 +48,7 @@ def weight2D(img, pos1, pos2):
     patch2  = get_patch(img, pos2)
     dist    = get_dist(patch1, patch2)
 
-    weight  = (dist*dist) / (2*h*h)
+    weight  = dist / (2*h*h)
     weight  = math.exp(-weight)
 
     return weight
