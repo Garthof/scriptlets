@@ -5,6 +5,7 @@ from scipy import ndimage
 from scipy import misc
 
 # Initialize constants
+noise_sigma = 10.0
 window_size = 9                # Search window size - must be an odd number
 patch_size = 5                 # Neighborhood size - must be an odd number
 h = 0.5
@@ -18,7 +19,7 @@ for y in xrange(-(kernel_size/2), kernel_size/2 + 1):
     for x in xrange(-(kernel_size/2), kernel_size/2 + 1):
         gauss_val = x*x + y*y
         gauss_val = math.exp(-gauss_val / (2.0 * sigma * sigma))
-        gauss_val = gauss_val / math.sqrt(2.0 * math.pi * sigma * sigma)
+        gauss_val = gauss_val / (2.0 * math.pi * sigma * sigma)
 
         gauss_kernel[x + kernel_size/2, y + kernel_size/2] = gauss_val
 
@@ -123,7 +124,59 @@ def weight2D(img, pos1, pos2):
     return weight
 
 
+def get_img_dists(img1, img2):
+    img_dists = np.zeros(img1.shape, dtype=np.float32)
+
+    for x in xrange(img_dists.shape[0]):
+        for y in xrange(img_dists.shape[1]):
+            patch1 = get_patch(img1, (x, y))
+            patch2 = get_patch(img2, (x, y))
+            img_dists[x, y] = get_dist(patch1, patch2)
+
+    return img_dists
+
+
+def get_img_weights(img1, img2):
+    img_dists = get_img_dists(img1, img2)
+
+    img_weights = np.zeros(img1.shape, dtype=np.float32)
+    for x in xrange(img_weights.shape[0]):
+        for y in xrange(img_weights.shape[1]):
+            img_weights[x, y] = math.exp(-img_dists[x, y] / (2*h*h))
+
+    return img_weights
+
+
+def get_disp_img(orig_img, disp):
+    disp_img = np.zeros(orig_img.shape, dtype=orig_img.dtype)
+
+    for x in xrange(orig_img.shape[0]):
+        for y in xrange(orig_img.shape[1]):
+            disp_pos = x+disp[0], y+disp[0]
+            if is_within(orig_img, (disp_pos)):
+                disp_img[x, y] = orig_img[disp_pos]
+
+    return disp_img
+
+
 def denoise2D(nois_img, verbose=False):
+    denois_img  = np.zeros(nois_img.shape, dtype=nois_img.dtype)
+    sum_weights = np.zeros(nois_img.shape, dtype=np.float32)
+
+    for dx in xrange(-(window_size/2), window_size/2 + 1):
+        for dy in xrange(-(window_size/2), window_size/2 + 1):
+            disp_img = get_disp_img(nois_img, (dx, dy))
+            img_weights = get_img_weights(nois_img, disp_img)
+            for x in xrange(nois_img.shape[0]):
+                for y in xrange(nois_img.shape[1]):
+                    if is_within(nois_img,(x+dx,y+dy)):
+                        sum_weights[x, y] += img_weights[x, y]
+                        denois_img[x, y]  += img_weights[x, y] * nois_img[x+dx, y+dy]
+
+    return (denois_img / sum_weights).astype(nois_img.dtype)
+
+
+def denoise2DOld(nois_img, verbose=False):
     denois_img  = np.zeros(nois_img.shape, dtype=nois_img.dtype)
     sum_weights = np.zeros(nois_img.shape, dtype=np.float32)
 
@@ -154,13 +207,15 @@ def main():
     misc.imsave("orig.png", orig_img)
 
     print "Generating noisy image..."
-    noisy_img   = orig_img \
-                + 0.4 * orig_img.std() * np.random.random(orig_img.shape)
+    print "Noise standard deviation: %1.5f" % noise_sigma
+
+    noise = np.random.normal(scale=noise_sigma, size=orig_img.size).reshape(orig_img.shape)
+    noisy_img = orig_img + noise
 
     misc.imsave("noisy.png", noisy_img)
 
     print "Denoising image..."
-    denoised_img = denoise2D(orig_img, True)
+    denoised_img = denoise2D(noisy_img.astype(orig_img.dtype), True)
 
     print "Storing denoised image..."
     misc.imsave("denoised.png", denoised_img)
