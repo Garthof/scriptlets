@@ -119,7 +119,7 @@ def main():
     misc.imsave("noisy.png", noisy_img)
 
     print "Denoising image..."
-    denoised_img = denoise2D(orig_img, True)
+    denoised_img = denoise2D(noisy_img.astype(orig_img.dtype), True)
 
     print "Storing denoised image..."
     misc.imsave("denoised.png", denoised_img)
