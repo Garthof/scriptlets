@@ -101,7 +101,7 @@ def denoise2D(img, verbose=False):
 
 def main():
     print "Loading Lena image..."
-    orig_img = misc.lena()[160:160+100, 160:160+100]
+    orig_img = misc.lena()[160:160+10, 160:160+10]
 
     print "Image dtype: %s" % orig_img.dtype
     print "Image size: %6d" % orig_img.size
@@ -116,16 +116,44 @@ def main():
     print "Generating noisy image..."
     print "Noise standard deviation: %1.5f" % noise_sigma
 
-    noise = np.random.normal(scale=noise_sigma, size=orig_img.size).reshape(orig_img.shape)
-    noisy_img = orig_img + noise
+    # Generate additive white Gaussian noise (AWGN) with specifed sigma
+    normal_noise = np.random.normal(scale=noise_sigma, size=orig_img.size)
+    normal_noise = normal_noise.reshape(orig_img.shape)
 
-    misc.imsave("noisy.png", noisy_img)
+    nois_img = orig_img + normal_noise
+
+    misc.imsave("noisy.png", nois_img)
+
+    # Normalize image, that is, translate values in image so its distribution
+    # is comparable to a normal N(0, 1) (mean = 0.0, standard deviation = 1.0).
+    # This way, parameters of the denoising algorithm, like h and sigma, are
+    # independent of the values and distribution of the image.
+    print "Normalizing noisy image..."
+    nois_img_mean = nois_img.mean()
+    nois_img_std  = nois_img.std()
+
+    normal_nois_img = np.empty(nois_img.shape, dtype=np.float32)
+
+    for x in xrange(normal_nois_img.shape[0]):
+        for y in xrange(normal_nois_img.shape[1]):
+            normal_nois_val = nois_img[x, y] - nois_img_mean
+            if nois_img_std != 0.000001: normal_nois_val /= nois_img_std
+            normal_nois_img[x, y] = normal_nois_val
 
     print "Denoising image..."
-    denoised_img = denoise2D(noisy_img.astype(orig_img.dtype), True)
+    normal_rest_img = denoise2D(normal_nois_img, True)
+
+    print "Denormalizing noisy image..."
+    rest_img = np.empty(nois_img.shape, dtype=orig_img.dtype)
+
+    for x in xrange(rest_img.shape[0]):
+        for y in xrange(rest_img.shape[1]):
+            rest_val = normal_rest_img[x, y] * nois_img_std
+            rest_val += nois_img_mean
+            rest_img[x, y] = rest_val
 
     print "Storing denoised image..."
-    misc.imsave("denoised.png", denoised_img)
+    misc.imsave("denoised.png", rest_img)
 
 if __name__ == "__main__":
     main()
