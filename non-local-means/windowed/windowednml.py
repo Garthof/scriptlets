@@ -8,8 +8,8 @@ from scipy import misc
 noise_sigma = 10.0
 window_size = 21                # Search window size - must be an odd number
 patch_size = 5                  # Neighborhood size - must be an odd number
-h = 0.7
-sigma = 10.0
+h = 0.5
+sigma = 1.0
 
 # Generate a Gauss kernel
 gauss_kernel = np.zeros((patch_size, patch_size), dtype=np.float32)
@@ -84,8 +84,8 @@ def denoise2D_pixel(img, img_pix_pos, verbose=False):
             # Get weight for current neighbor
             if is_within(img_ngh_pos, img.shape):
                 win_weights[win_ngh_pos] = weight2D(img, img_pix_pos, img_ngh_pos)
-                denoised_val = denoised_val + win_weights[win_ngh_pos] * img[img_ngh_pos]
-                sum_weights = sum_weights + win_weights[win_ngh_pos]
+                denoised_val += win_weights[win_ngh_pos] * img[img_ngh_pos]
+                sum_weights  += win_weights[win_ngh_pos]
 
     return (denoised_val / sum_weights)
 
