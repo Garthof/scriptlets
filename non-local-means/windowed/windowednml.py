@@ -49,6 +49,13 @@ def get_patch(img, pos):
 
 
 def weight2D(img, pos1, pos2):
+    # The weight between equal positions should be one, as the distance is zero.
+    # However, this is a special case, and weight is computed differently. See
+    # more information in denoise2D_pixel
+    if pos1 == pos2:
+        return 0.
+
+    # Get neighboring patches for the two positions and compute distances
     patch1  = get_patch(img, pos1)
     patch2  = get_patch(img, pos2)
     dist    = get_dist(patch1, patch2)
@@ -71,7 +78,6 @@ def denoise2D_pixel(img, img_pix_pos, verbose=False):
     win_shape       = (window_size, window_size)
     win_weights     = np.zeros(win_shape, dtype=np.float32)
     denoised_val    = 0.0
-    sum_weights     = 0.0
 
     for dy in xrange(-window_size/2, window_size/2 + 1):
         for dx in xrange(-window_size/2, window_size/2 + 1):
@@ -85,9 +91,18 @@ def denoise2D_pixel(img, img_pix_pos, verbose=False):
             if is_within(img_ngh_pos, img.shape):
                 win_weights[win_ngh_pos] = weight2D(img, img_pix_pos, img_ngh_pos)
                 denoised_val += win_weights[win_ngh_pos] * img[img_ngh_pos]
-                sum_weights  += win_weights[win_ngh_pos]
 
-    return (denoised_val / sum_weights)
+    # Add own contribution. This is a special case, and contribution from its
+    # own pixel is accounted by using the maximum weight of all neighbouring
+    # pixels within the window
+    max_weights = np.max(win_weights)
+    denoised_val += max_weights * img[img_pix_pos]
+
+    # Sum all weights to normalize all weight contributions
+    sum_weights = np.sum(win_weights) + max_weights
+    denoised_val /= sum_weights
+
+    return denoised_val
 
 
 def denoise2D(img, verbose=False):
