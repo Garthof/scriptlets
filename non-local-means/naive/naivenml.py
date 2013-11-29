@@ -13,8 +13,8 @@ sigma = 1.0
 # Generate a Gauss kernel
 gauss_kernel = np.zeros((patch_size, patch_size), dtype=np.float32)
 
-for y in xrange(-patch_size/2, patch_size/2 + 1):
-    for x in xrange(-patch_size/2, patch_size/2 + 1):
+for x in xrange(-patch_size/2, patch_size/2 + 1):
+    for y in xrange(-patch_size/2, patch_size/2 + 1):
         gauss_val = x*x + y*y
         gauss_val = math.exp(-gauss_val / (2.0 * sigma * sigma))
         gauss_val = gauss_val / (2.0 * math.pi * sigma * sigma)
@@ -33,8 +33,8 @@ def get_dist(patch1, patch2):
 def get_patch(img, pos):
     patch = np.zeros((patch_size, patch_size), dtype=img.dtype)
 
-    for dy in xrange(-patch_size/2, patch_size/2 + 1):
-        for dx in xrange(-patch_size/2, patch_size/2 + 1):
+    for dx in xrange(-patch_size/2, patch_size/2 + 1):
+        for dy in xrange(-patch_size/2, patch_size/2 + 1):
             img_pos     = (pos[0]+dx, pos[1]+dy)
             patch_pos   = (dx + patch_size/2, dy + patch_size/2)
 
@@ -63,16 +63,16 @@ def denoise2D_pixel(img, pos, verbose=False):
 
     weights = np.zeros(img_shape, dtype=np.float32)
 
-    for y in xrange(img_shape[1]):
-        for x in xrange(img_shape[0]):
+    for x in xrange(img_shape[0]):
+        for y in xrange(img_shape[1]):
             weights[x,y] = weight2D(img, pos, (x, y))
 
     if verbose:
         print "Get denoised value by averaging with weights..."
 
     denoised_val = 0.0
-    for y in xrange(img_shape[1]):
-        for x in xrange(img_shape[0]):
+    for x in xrange(img_shape[0]):
+        for y in xrange(img_shape[1]):
             denoised_val = denoised_val + weights[x,y] * img[x,y]
 
     if verbose:
@@ -92,8 +92,8 @@ def denoise2D(img, verbose=False):
 
     denoised_img = np.zeros(img_shape, dtype=img_type)
 
-    for y in xrange(img_shape[1]):
-        for x in xrange(img_shape[0]):
+    for x in xrange(img_shape[0]):
+        for y in xrange(img_shape[1]):
             denoised_img[x, y] = denoise2D_pixel(img, (x, y), verbose)
 
     return denoised_img
