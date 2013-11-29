@@ -8,7 +8,7 @@ from scipy import misc
 noise_sigma = 10.0
 window_size = 21                # Search window size - must be an odd number
 patch_size = 5                  # Neighborhood size - must be an odd number
-h = 0.5
+h = 0.25
 sigma = 1.0
 
 # Generate a Gauss kernel
