@@ -6,9 +6,9 @@ from scipy import misc
 
 # Initialize constants
 noise_sigma = 10.0
-window_size = 9                # Search window size - must be an odd number
+window_size = 21               # Search window size - must be an odd number
 patch_size = 5                 # Neighborhood size - must be an odd number
-h = 0.5
+h = 0.25
 sigma = 1.0
 
 # Generate a Gauss kernel
@@ -113,17 +113,6 @@ def get_patch(img, pos):
     return patch
 
 
-def weight2D(img, pos1, pos2):
-    patch1  = get_patch(img, pos1)
-    patch2  = get_patch(img, pos2)
-    dist    = get_dist(patch1, patch2)
-
-    weight  = (dist*dist) / (2*h*h)
-    weight  = math.exp(-weight)
-
-    return weight
-
-
 def get_img_dists(img1, img2):
     img_dists = np.zeros(img1.shape, dtype=np.float32)
 
@@ -176,6 +165,17 @@ def denoise2D(nois_img, verbose=False):
     return (denois_img / sum_weights).astype(nois_img.dtype)
 
 
+def weight2DOld(img, pos1, pos2):
+    patch1  = get_patch(img, pos1)
+    patch2  = get_patch(img, pos2)
+    dist    = get_dist(patch1, patch2)
+
+    weight  = (dist*dist) / (2*h*h)
+    weight  = math.exp(-weight)
+
+    return weight
+
+
 def denoise2DOld(nois_img, verbose=False):
     denois_img  = np.zeros(nois_img.shape, dtype=nois_img.dtype)
     sum_weights = np.zeros(nois_img.shape, dtype=np.float32)
@@ -185,7 +185,7 @@ def denoise2DOld(nois_img, verbose=False):
             for x in xrange(nois_img.shape[0]):
                 for y in xrange(nois_img.shape[1]):
                     if is_within(nois_img,(x+dx,y+dy)):
-                        weight = weight2D(nois_img, (x+dx,y+dy), (x,y))
+                        weight = weight2DOld(nois_img, (x+dx,y+dy), (x,y))
                         sum_weights[x, y] += weight
                         denois_img[x, y]  += weight * nois_img[x+dx, y+dy]
 
@@ -194,7 +194,8 @@ def denoise2DOld(nois_img, verbose=False):
 
 def main():
     print "Loading Lena image..."
-    orig_img = misc.lena()[160:160+10, 160:160+10]
+    img_size = 50, 50
+    orig_img = misc.lena()[160:160+img_size[0], 160:160+img_size[1]]
 
     print "Image dtype: %s" % orig_img.dtype
     print "Image size: %6d" % orig_img.size
