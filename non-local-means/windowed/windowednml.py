@@ -118,6 +118,28 @@ def denoise2D(img, verbose=False):
     return denoised_img
 
 
+def get_noisy_img(orig_img):
+    """
+        Tries to load a file containing additive white Gaussian noise. If it
+        does not exist, a file with noise is generated. The noise is added to
+        the image.
+    """
+    noise_file_name = "awgn_nois.npy"
+
+    try:
+        normal_noise = np.load(noise_file_name)
+        print "Load noise with standard deviation: %1.5f" % normal_noise.std()
+
+    except IOError:
+        print "Generate noise with standard deviation: %1.5f" % noise_sigma
+        normal_noise = np.random.normal(scale=noise_sigma, size=orig_img.size)
+        np.save(noise_file_name, normal_noise)
+
+    normal_noise = normal_noise.reshape(orig_img.shape)
+
+    return (orig_img + normal_noise)
+
+
 def main():
     print "Loading Lena image..."
     img_size = 50, 50
@@ -135,13 +157,7 @@ def main():
 
     # Generate additive white Gaussian noise (AWGN) with specifed sigma
     print "Generating noisy image..."
-    print "Noise standard deviation: %1.5f" % noise_sigma
-
-    normal_noise = np.random.normal(scale=noise_sigma, size=orig_img.size)
-    normal_noise = normal_noise.reshape(orig_img.shape)
-
-    nois_img = orig_img + normal_noise
-
+    nois_img = get_noisy_img(orig_img)
     misc.imsave("noisy.png", nois_img)
 
     # Normalize image, that is, translate values in image so its distribution
