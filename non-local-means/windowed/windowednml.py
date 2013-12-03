@@ -120,7 +120,8 @@ def denoise2D(img, verbose=False):
 
 def main():
     print "Loading Lena image..."
-    orig_img = misc.lena()[160:160+50, 160:160+50]
+    img_size = 50, 50
+    orig_img = misc.lena()[160:160+img_size[0], 160:160+img_size[1]]
 
     print "Image dtype: %s" % orig_img.dtype
     print "Image size: %6d" % orig_img.size
