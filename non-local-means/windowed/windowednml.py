@@ -152,13 +152,9 @@ def main():
     nois_img_mean = nois_img.mean()
     nois_img_std  = nois_img.std()
 
-    normal_nois_img = np.empty(nois_img.shape, dtype=np.float32)
-
-    for x in xrange(normal_nois_img.shape[0]):
-        for y in xrange(normal_nois_img.shape[1]):
-            normal_nois_val = nois_img[x, y] - nois_img_mean
-            if nois_img_std != 0.000001: normal_nois_val /= nois_img_std
-            normal_nois_img[x, y] = normal_nois_val
+    normal_nois_img = nois_img - nois_img_mean
+    if nois_img_std != 0.000001: # Divide by std. dev. if it is not zero
+        normal_nois_img /= nois_img_std
 
     print "Denoising image..."
     normal_rest_img = denoise2D(normal_nois_img, True)
