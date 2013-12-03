@@ -127,11 +127,7 @@ def get_img_dists(img1, img2):
 
 def get_img_weights(img1, img2):
     img_dists = get_img_dists(img1, img2)
-
-    img_weights = np.zeros(img1.shape, dtype=np.float32)
-    for x in xrange(img_weights.shape[0]):
-        for y in xrange(img_weights.shape[1]):
-            img_weights[x, y] = math.exp(-img_dists[x, y] / (2*h*h))
+    img_weights = np.exp(-img_dists / (2*h*h))
 
     return img_weights
 
