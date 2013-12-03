@@ -28,69 +28,6 @@ def is_within(img, pos):
     return (0 <= pos[0] < img.shape[0] and 0 <= pos[1] < img.shape[1])
 
 
-def get_val(img, pos):
-    if is_within(img, pos):
-        return img[pos]
-    else:
-        return 0
-
-
-def set_val(img, pos, val):
-    if is_within(img, pos):
-        img[pos] = val
-
-
-def get_f(nois_img, pos):
-    f = np.zeros(nois_img.shape, dtype=np.float32)
-
-    for dx in xrange(-(window_size/2), window_size/2 + 1):
-        for dy in xrange(-(window_size/2), window_size/2 + 1):
-            disp_pos = (pos[0] + dx, pos[1] + dy)
-            set_val(f, disp_pos, 1.0)
-
-    return f
-    # return np.ones(nois_img.shape, dtype=np.float32)
-
-
-def get_vn(nois_img, un):
-    vn = np.zeros(nois_img.shape, dtype=np.float32)
-
-    for x in xrange(nois_img.shape[0]):
-        for y in xrange(nois_img.shape[1]):
-            vn_val  = get_val(vn, (x,y))
-
-            for dx in xrange(-kernel_size/2, kernel_size/2 + 1):
-                for dy in xrange(-kernel_size/2, kernel_size/2 + 1):
-                    img_disp_pos = (x + dx, y + dy)
-                    ker_disp_pos = (dx + kernel_size/2, dy + kernel_size/2)
-
-                    ker_val = get_val(gauss_kernel, ker_disp_pos)
-                    img_val = get_val(nois_img, img_disp_pos)
-
-                    vn_val += ker_val * img_val
-
-            set_val(vn, (x,y), vn_val)
-
-    return vn
-
-
-def get_un(nois_img, disp):
-    un = np.zeros(nois_img.shape, dtype=nois_img.dtype)
-
-    for x in xrange(nois_img.shape[0]):
-        for y in xrange(nois_img.shape[1]):
-            curr_pos = x, y
-            disp_pos = x+disp[0], y+disp[1]
-
-            curr_val = get_val(nois_img, curr_pos)
-            disp_val = get_val(nois_img, disp_pos)
-
-            diff = curr_val - disp_val
-            set_val(un, curr_pos, diff * diff)
-
-    return un
-
-
 def get_dist(patch1, patch2):
     mat_dist = patch1 - patch2
     mat_dist = mat_dist * mat_dist
@@ -161,29 +98,8 @@ def denoise2D(nois_img, verbose=False):
     return (denois_img / sum_weights).astype(nois_img.dtype)
 
 
-def weight2DOld(img, pos1, pos2):
-    patch1  = get_patch(img, pos1)
-    patch2  = get_patch(img, pos2)
-    dist    = get_dist(patch1, patch2)
-
-    weight  = (dist*dist) / (2*h*h)
-    weight  = math.exp(-weight)
-
-    return weight
 
 
-def denoise2DOld(nois_img, verbose=False):
-    denois_img  = np.zeros(nois_img.shape, dtype=nois_img.dtype)
-    sum_weights = np.zeros(nois_img.shape, dtype=np.float32)
-
-    for dx in xrange(-(window_size/2), window_size/2 + 1):
-        for dy in xrange(-(window_size/2), window_size/2 + 1):
-            for x in xrange(nois_img.shape[0]):
-                for y in xrange(nois_img.shape[1]):
-                    if is_within(nois_img,(x+dx,y+dy)):
-                        weight = weight2DOld(nois_img, (x+dx,y+dy), (x,y))
-                        sum_weights[x, y] += weight
-                        denois_img[x, y]  += weight * nois_img[x+dx, y+dy]
 
     return (denois_img / sum_weights).astype(nois_img.dtype)
 
