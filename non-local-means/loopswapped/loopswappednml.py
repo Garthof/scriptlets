@@ -84,24 +84,39 @@ def get_disp_img(orig_img, disp):
 def denoise2D(nois_img, verbose=False):
     denois_img  = np.zeros(nois_img.shape, dtype=nois_img.dtype)
     sum_weights = np.zeros(nois_img.shape, dtype=np.float32)
+    max_weights = np.zeros(nois_img.shape, dtype=np.float32)
 
-    for dx in xrange(-(window_size/2), window_size/2 + 1):
-        for dy in xrange(-(window_size/2), window_size/2 + 1):
+    # Compute contribution from all neighboring pixels (avoid own contribution)
+    for dx in xrange(-(window_size/2), 1):
+        for dy in xrange(-(window_size/2), 1):
+            if (dx, dy) == (0, 0):
+                continue
+
             disp_img = get_disp_img(nois_img, (dx, dy))
             img_weights = get_img_weights(nois_img, disp_img)
+
             for x in xrange(nois_img.shape[0]):
                 for y in xrange(nois_img.shape[1]):
                     if is_within(nois_img,(x+dx,y+dy)):
-                        sum_weights[x, y] += img_weights[x, y]
-                        denois_img[x, y]  += img_weights[x, y] * nois_img[x+dx, y+dy]
+                        weight = img_weights[x, y]
 
-    return (denois_img / sum_weights).astype(nois_img.dtype)
+                        sum_weights[x   , y   ] += weight
+                        sum_weights[x+dx, y+dy] += weight
 
+                        max_weights[x   , y   ]  = max(max_weights[x   , y   ], weight)
+                        max_weights[x+dx, y+dy]  = max(max_weights[x+dx, y+dy], weight)
 
+                        denois_img[x   , y   ]  += weight * nois_img[x+dx, y+dy]
+                        denois_img[x+dx, y+dy]  += weight * nois_img[x   , y   ]
 
+    # Compute own contribution
+    denois_img += max_weights * nois_img
 
+    # Sum all weights (including max) to normalize all weight contributions
+    sum_weights += max_weights
+    denois_img  /= sum_weights
 
-    return (denois_img / sum_weights).astype(nois_img.dtype)
+    return denois_img
 
 
 def get_noisy_img(orig_img):
