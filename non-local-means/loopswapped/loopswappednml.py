@@ -210,8 +210,7 @@ def main():
     normal_noise = np.random.normal(scale=noise_sigma, size=orig_img.size)
     normal_noise = normal_noise.reshape(orig_img.shape)
 
-    # nois_img = orig_img + normal_noise
-    nois_img = orig_img     # test
+    nois_img = orig_img + normal_noise
 
     misc.imsave("noisy.png", nois_img)
 
@@ -222,14 +221,6 @@ def main():
     print "Normalizing noisy image..."
     nois_img_mean = nois_img.mean()
     nois_img_std  = nois_img.std()
-
-    # normal_nois_img = np.empty(nois_img.shape, dtype=np.float32)
-
-    # for x in xrange(normal_nois_img.shape[0]):
-    #     for y in xrange(normal_nois_img.shape[1]):
-    #         normal_nois_val = nois_img[x, y] - nois_img_mean
-    #         if nois_img_std != 0.000001: normal_nois_val /= nois_img_std
-    #         normal_nois_img[x, y] = normal_nois_val
 
     normal_nois_img = nois_img - nois_img_mean
     if nois_img_std != 0.000001: normal_nois_img /= nois_img_std
