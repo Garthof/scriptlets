@@ -137,7 +137,7 @@ def get_disp_img(orig_img, disp):
 
     for x in xrange(orig_img.shape[0]):
         for y in xrange(orig_img.shape[1]):
-            disp_pos = x+disp[0], y+disp[0]
+            disp_pos = x+disp[0], y+disp[1]
             if is_within(orig_img, (disp_pos)):
                 disp_img[x, y] = orig_img[disp_pos]
 
