@@ -136,9 +136,18 @@ def get_noisy_img(orig_img):
         normal_noise = np.random.normal(scale=noise_sigma, size=orig_img.size)
         np.save(noise_file_name, normal_noise)
 
+    # Reshape noise to the shape of the image
     normal_noise = normal_noise.reshape(orig_img.shape)
 
-    return (orig_img + normal_noise)
+    # Add noise to the image
+    noisy_img = orig_img + normal_noise
+
+    # Image values are expected to be between 0. and 255., remove values
+    # outside that range. See http://goo.gl/UYDJLU
+    noisy_img_flags = np.multiply(noisy_img >= 0., noisy_img <= 255.)
+    noisy_img = np.multiply(noisy_img, noisy_img_flags) + 255. * (noisy_img > 255.)
+
+    return noisy_img
 
 
 def main():
@@ -174,7 +183,7 @@ def main():
         normal_nois_img /= nois_img_std
 
     print "Denoising image..."
-    normal_rest_img = denoise2D(normal_nois_img, True)
+    normal_rest_img = denoise2D(normal_nois_img, False)
 
     print "Denormalizing noisy image..."
     rest_img = np.empty(nois_img.shape, dtype=orig_img.dtype)
