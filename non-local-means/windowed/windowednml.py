@@ -173,7 +173,7 @@ def main():
         normal_nois_img /= nois_img_std
 
     print "Denoising image..."
-    normal_rest_img = denoise2D(normal_nois_img, True)
+    normal_rest_img = denoise2D(normal_nois_img, False)
 
     print "Denormalizing noisy image..."
     rest_img = np.empty(nois_img.shape, dtype=orig_img.dtype)
