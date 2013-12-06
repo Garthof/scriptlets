@@ -179,7 +179,7 @@ def main():
     nois_img_std  = nois_img.std()
 
     normal_nois_img = nois_img - nois_img_mean
-    if nois_img_std != 0.000001: # Divide by std. dev. if it is not zero
+    if nois_img_std > 0.01: # Divide by std. dev. if it is not zero
         normal_nois_img /= nois_img_std
 
     print "Denoising image..."
