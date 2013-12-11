@@ -100,10 +100,10 @@ viewer 0 snapshot -alpha /tmp/original.png
 $origOrthoSlice setViewerMask 0
 
 # Denoise the same volume with several combinations of parameter values. For
-# each parameter, up to 4 denoisings are done on the same volume (using the
+# each parameter, up to 3 denoisings are done on the same volume (using the
 # previous results to avoid repeating computations).
-for {set iterVal 1} {$iterVal <= 4} {set iterVal [expr $iterVal+1]} {
-    foreach windowVal {11 21 101 201} {
+for {set iterVal 1} {$iterVal <= 3} {set iterVal [expr $iterVal+1]} {
+    foreach windowVal {11 21 51 101} {
         foreach similVal {0.5 0.6 0.7 0.8 0.9 1.0} {
             if {$iterVal == 1} {
                 set srcVolume $origVolume
