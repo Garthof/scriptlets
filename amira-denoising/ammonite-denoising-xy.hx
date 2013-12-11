@@ -13,7 +13,7 @@ proc getStrSimilVal {similVal} {
 proc getVolName {iterVal windowVal similVal} {
     set strIterVal [getStrIterVal $iterVal]
     set strWindowVal [getStrWindowVal $windowVal]
-    set strSimilVal [getStrSimilVal $similVal]]
+    set strSimilVal [getStrSimilVal $similVal]
 
     return iter-$strIterVal-win-$strWindowVal-simil-$strSimilVal
 }
