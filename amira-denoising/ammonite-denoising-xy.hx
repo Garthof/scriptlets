@@ -1,3 +1,23 @@
+proc getStrIterVal {iterVal} {
+    return [format {%03d} $iterVal]
+}
+
+proc getStrWindowVal {windowVal} {
+    return [format {%04d} $windowVal]
+}
+
+proc getStrSimilVal {similVal} {
+    return [format {%02d} [expr int($similVal*10)]]
+}
+
+proc getVolName {iterVal windowVal similVal} {
+    set strIterVal [getStrIterVal $iterVal]
+    set strWindowVal [getStrWindowVal $windowVal]
+    set strSimilVal [getStrSimilVal $similVal]]
+
+    return iter-$strIterVal-win-$strWindowVal-simil-$strSimilVal
+}
+
 proc executeNMLFilter {volume windowVal similarityVal iterVal} {
     # Open an editor for the current volume
     $volume setEditor [create HxImageVisionEditor]
@@ -32,11 +52,7 @@ proc denoiseVolume {inVolume inOrthoSlice iterVal windowVal similVal} {
     executeNMLFilter $outVolume $windowVal $similVal $iterVal
 
     # Change name of the volume
-    set strIterVal [format {%03d} $iterVal]
-    set strWindowVal [format {%04d} $windowVal]
-    set strSimilVal [format {%02d} [expr int($similVal*10)]]
-
-    set currVolName iter-$strIterVal-win-$strWindowVal-simil-$strSimilVal
+    set currVolName [getVolName $iterVal $windowVal $similVal]
     $outVolume setLabel $currVolName
 
     # Take a snapshot of the result and hide the volume and the orthoslice
