@@ -1,3 +1,47 @@
+proc executeNMLFilter {volume windowVal similarityVal iterVal} {
+    # Open an editor for the current volume
+    $volume setEditor [create HxImageVisionEditor]
+    set currFilter [$volume getEditor]
+
+    # Go to the NLM denoising filter
+    $currFilter filter setValue 14
+    $currFilter fire
+
+    # Change the parameters of the filter
+    $currFilter searchWindow setValue $windowVal
+    $currFilter similarityValue setValue $similarityVal
+
+    # Start filtering
+    $currFilter doIt hit
+    $currFilter fire
+}
+
+proc denoiseVolume {inVolume inOrthoSlice windowVal similarityVal iterVal} {
+    # Generate a copy of the original volume and orthoslice and hide
+    # the orthoslice
+    set outVolume [$inVolume duplicate]
+    set outOrthoSlice [$inOrthoSlice duplicate]
+
+    $outOrthoSlice data connect $inVolume
+    $outOrthoSlice frameSettings setValue 0 0
+    $outOrthoSlice sliceOrientation setValue 2
+    $outOrthoSlice options setValue 0 1
+    $outOrthoSlice fire
+
+    # Denoise volume
+    executeNMLFilter $outVolume $windowVal $similarityVal $iterVal
+
+    # Change name of the volume
+    set currVolName window-$windowVal-similarity-$similarityVal-iteration-$iterVal
+    $outVolume setLabel $currVolName
+
+    # Take a snapshot of the result and hide the volume and the orthoslice
+    $outOrthoSlice setViewerMask 1
+    viewer 0 redraw
+    viewer 0 snapshot -alpha /tmp/$currVolName.png
+    $outOrthoSlice setViewerMask 0
+}
+
 # Remove all object from the pool
 remove -all
 
@@ -35,42 +79,8 @@ viewer 0 redraw
 viewer 0 snapshot -alpha /tmp/original.png
 $origOrthoSlice setViewerMask 0
 
-# Generate a copy of the original volume and orthoslice and hide the orthoslice
-set currVolume [$origVolume duplicate]
-set currOrthoSlice [$origOrthoSlice duplicate]
+denoiseVolume $origVolume $origOrthoSlice 21 0.6 1
 
-$currOrthoSlice data connect $currVolume
-$currOrthoSlice frameSettings setValue 0 0
-$currOrthoSlice sliceOrientation setValue 2
-$currOrthoSlice options setValue 0 1
-$currOrthoSlice fire
-
-# Open an editor for the current volume
-$currVolume setEditor [create HxImageVisionEditor]
-set currFilter [$currVolume getEditor]
-
-# Go to the NLM denoising filter
-$currFilter filter setValue 14
-$currFilter fire
-
-# Change the parameters of the filter
-$currFilter searchWindow setValue 21
-$currFilter similarityValue setValue 0.7
-
-# Start filtering
-$currFilter doIt hit
-$currFilter fire
-
-# Change name of the volume
-set currVolName {window-21-similarity-07-iteration-1}
-$currVolume setLabel $currVolName
-
-# Take a snapshot of the result and hide the volume and the orthoslice
-$currOrthoSlice setViewerMask 1
-viewer 0 redraw
-viewer 0 snapshot -alpha /tmp/$currVolName.png
-$currOrthoSlice setViewerMask 0
-
-# # Redraw viewer
+# Redraw viewer
 viewer 0 setAutoRedraw 1
 viewer 0 redraw
