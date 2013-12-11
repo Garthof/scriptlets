@@ -29,7 +29,7 @@ $origOrthoSlice sliceOrientation setValue 2
 $origOrthoSlice options setValue 0 1
 $origOrthoSlice fire
 
-# Take a snapshot of the result and hide the volume and the orthoslice
+# Take a snapshot of the orthoslice and hide it
 $origOrthoSlice setViewerMask 1
 viewer 0 redraw
 viewer 0 snapshot -alpha /tmp/original.png
