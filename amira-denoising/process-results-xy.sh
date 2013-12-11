@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Get directory with original files and directory to store the processed files
 orig_dir=$1
