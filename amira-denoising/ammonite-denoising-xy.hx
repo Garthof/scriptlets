@@ -16,23 +16,27 @@ proc executeNMLFilter {volume windowVal similarityVal iterVal} {
     $currFilter fire
 }
 
-proc denoiseVolume {inVolume inOrthoSlice windowVal similarityVal iterVal} {
+proc denoiseVolume {inVolume inOrthoSlice iterVal windowVal similVal} {
     # Generate a copy of the original volume and orthoslice and hide
     # the orthoslice
     set outVolume [$inVolume duplicate]
     set outOrthoSlice [$inOrthoSlice duplicate]
 
-    $outOrthoSlice data connect $inVolume
+    $outOrthoSlice data connect $outVolume
     $outOrthoSlice frameSettings setValue 0 0
     $outOrthoSlice sliceOrientation setValue 2
     $outOrthoSlice options setValue 0 1
     $outOrthoSlice fire
 
     # Denoise volume
-    executeNMLFilter $outVolume $windowVal $similarityVal $iterVal
+    executeNMLFilter $outVolume $windowVal $similVal $iterVal
 
     # Change name of the volume
-    set currVolName window-$windowVal-similarity-$similarityVal-iteration-$iterVal
+    set strIterVal [format {%03d} $iterVal]
+    set strWindowVal [format {%04d} $windowVal]
+    set strSimilVal [format {%02d} [expr int($similVal*10)]]
+
+    set currVolName iter-$strIterVal-win-$strWindowVal-simil-$strSimilVal
     $outVolume setLabel $currVolName
 
     # Take a snapshot of the result and hide the volume and the orthoslice
@@ -42,7 +46,7 @@ proc denoiseVolume {inVolume inOrthoSlice windowVal similarityVal iterVal} {
     $outOrthoSlice setViewerMask 0
 }
 
-# Remove all object from the pool
+# Remove all objects from the pool
 remove -all
 
 # Set a unique viewer
@@ -79,7 +83,13 @@ viewer 0 redraw
 viewer 0 snapshot -alpha /tmp/original.png
 $origOrthoSlice setViewerMask 0
 
-denoiseVolume $origVolume $origOrthoSlice 21 0.6 1
+for {set iterVal 1} {$iterVal <= 1} {set iterVal [expr $iterVal+1]} {
+    foreach windowVal {11 21 101 201} {
+        foreach similVal {0.5 0.6 0.7 0.8 0.9 1.0} {
+            denoiseVolume $origVolume $origOrthoSlice $iterVal $windowVal $similVal
+        }
+    }
+}
 
 # Redraw viewer
 viewer 0 setAutoRedraw 1
