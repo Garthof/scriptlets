@@ -55,10 +55,9 @@ proc denoiseVolume {inVolume inOrthoSlice iterVal windowVal similVal} {
     set currVolName [getVolName $iterVal $windowVal $similVal]
     $outVolume setLabel $currVolName
 
-    # Take a snapshot of the result and hide the volume and the orthoslice
+    # Show orthoslice
     $outOrthoSlice setViewerMask 1
     viewer 0 redraw
-    viewer 0 snapshot -alpha /tmp/$currVolName.png
     $outOrthoSlice setViewerMask 0
 }
 
@@ -93,10 +92,9 @@ $origOrthoSlice sliceOrientation setValue 0
 $origOrthoSlice options setValue 0 1
 $origOrthoSlice fire
 
-# Take a snapshot of the orthoslice and hide it
+# Show orthoslice
 $origOrthoSlice setViewerMask 1
 viewer 0 redraw
-viewer 0 snapshot -alpha /tmp/original.png
 $origOrthoSlice setViewerMask 0
 
 # Denoise the same volume with several combinations of parameter values. For
