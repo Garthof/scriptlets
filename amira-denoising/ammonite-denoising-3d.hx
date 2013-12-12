@@ -102,7 +102,7 @@ $origOrthoSlice setViewerMask 0
 # each parameter, up to 3 denoisings are done on the same volume (using the
 # previous results to avoid repeating computations).
 for {set iterVal 1} {$iterVal <= 3} {set iterVal [expr $iterVal+1]} {
-    foreach windowVal {11 21 51 101} {
+    foreach windowVal {11 21 31} {
         foreach similVal {0.5 0.6 0.7 0.8 0.9 1.0} {
             if {$iterVal == 1} {
                 set srcVolume $origVolume
