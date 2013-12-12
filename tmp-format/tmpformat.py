@@ -19,6 +19,38 @@ from scipy import misc
 noise_sigma = 10.0
 
 
+def load_from_tmp(filename):
+    """
+    Loads a numpy array from an image file in TMP format.
+    """
+    # Open and read the file
+    with io.open(filename, "rb") as bin_file:
+        # Read header
+        int_size = 4                # In TMP files each int is 4 bytes
+        header = bin_file.read(4 * int_size)
+        frames, width, height, channels = struct.unpack("iiii", header)
+
+        # Read remaining data
+        float_size = 4              # In TMP files each float is 4 bytes
+        expected_data_size = frames * width * height * channels * float_size
+        data = bin_file.read(expected_data_size)
+
+        # Sanity check
+        if len(data) != expected_data_size:
+            raise IOError("File size does not match size in header")
+
+    # Convert the sequence of bytes (a.k.a. string) into a one-dimensional
+    # Python array of floats
+    arr_img = array.array('f')
+    arr_img.fromstring(data)
+
+    # Convert the Python array into a NumPy array with the proper
+    # dimensions. 3D or multichannel images are not supported
+    one_img = numpy.array(arr_img)
+    img = one_img.reshape((height, width))
+
+    return img
+
 
 def save_to_tmp(filename, img):
     """
@@ -119,10 +151,11 @@ def main():
     nois_img = get_noisy_img(orig_img)
     misc.imsave("noisy.png", nois_img)
 
-    # Normalize image, that is, translate values in image so its distribution
-    # is comparable to a normal N(0, 1) (mean = 0.0, standard deviation = 1.0).
-    # This way, parameters of the denoising algorithm, like h and sigma, are
-    # independent of the values and distribution of the image.
+    # Normalize image, that is, translate values in image so its
+    # distribution is comparable to a normal N(0, 1) (mean = 0.0,
+    # standard deviation = 1.0). This way, parameters of the denoising
+    # algorithm, like h and sigma, are independent of the values and
+    # distribution of the image.
     print "Normalizing noisy image..."
     nois_img_mean = nois_img.mean()
     nois_img_std  = nois_img.std()
@@ -131,8 +164,19 @@ def main():
     if nois_img_std > 0.01: # Divide by std. dev. if it is not zero
         normal_nois_img /= nois_img_std
 
-    print "Saving as tmp format..."
+    # Test saving and loading a noisy image.
+    print "Saving as TMP format..."
     save_to_tmp("noisy.tmp", normal_nois_img)
+
+    print "Load from TMP format..."
+    loaded_img = load_from_tmp("noisy.tmp")
+
+    # Check if saved and loaded image are quite similar (some small error
+    # could be expected)
+    if numpy.allclose(normal_nois_img, loaded_img):
+        print "Saved and loaded images are equal"
+    else:
+        print "Saved and loaded images are NOT equal"
 
 
 if __name__ == "__main__":
