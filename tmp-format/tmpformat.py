@@ -1,9 +1,10 @@
 """
-Converts an image in the numpy.array format into the tmp format as defined in
-[1], and stores the tmp file in disk.
+Converts an image in the numpy.array format into the TMP format as defined
+in [1], and stores the TMP file in disk. For more information on this quite
+simple format, consult the source code available at http://goo.gl/WrpJct
 
-[1]     Adams et al. "Gaussian KD-Trees for fast hihg-dimensional filtering"
-        (2009)
+[1]     Adams et al. "Gaussian KD-Trees for fast high-dimensional
+        filtering" (2009)
 """
 
 import array
@@ -18,7 +19,11 @@ from scipy import misc
 noise_sigma = 10.0
 
 
+
 def save_to_tmp(filename, img):
+    """
+    Saves numpy array stored in img into a file with TMP format.
+    """
     # Get dimensions of the image
     num_dims = len(img.shape)
 
@@ -65,9 +70,9 @@ def save_to_tmp(filename, img):
 
 def get_noisy_img(orig_img):
     """
-        Tries to load a file containing additive white Gaussian noise. If it
-        does not exist, a file with noise is generated. The noise is added to
-        the image.
+    Tries to load a file containing additive white Gaussian noise. If it
+    does not exist, a file with noise is generated. The noise is added to
+    the image.
     """
     noise_file_name = "awgn_nois.npy"
 
