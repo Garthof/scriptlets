@@ -38,6 +38,10 @@ def load_from_tmp(filename):
         # Sanity check
         if len(data) != expected_data_size:
             raise IOError("File size does not match size in header")
+        if frames != 1:
+            raise Exception("Number of frames %d!=1 not supported" % frames)
+        if channels != 1:
+            raise Exception("Number of channels %d!=1 not supported" % channels)
 
     # Convert the sequence of bytes (a.k.a. string) into a one-dimensional
     # Python array of floats
