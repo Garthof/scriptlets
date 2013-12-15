@@ -28,6 +28,7 @@ proc executeNMLFilter {volume windowVal similarityVal iterVal} {
     $currFilter fire
 
     # Change the parameters of the filter
+    $currFilter filter setValue 1 3
     $currFilter searchWindow setValue $windowVal
     $currFilter similarityValue setValue $similarityVal
 
@@ -79,7 +80,7 @@ mainWindow show
 viewer 0 setCameraType orthographic
 
 # Load original volume
-set volPath {/media/data/bzflamas/AmmoniteDenoising/datasets/volumes/Ammonit-Nano-CT/amira/Ammonit-Eo_u-cropped-141x151x180-XZ.vol.am}
+set volPath {/media/data/bzflamas/AmmoniteDenoising/datasets/volumes/Ammonit-Nano-CT/amira/Ammonit-Eo_u-cropped-141x151x180-XY.vol.am}
 set origVolume [load $volPath]
 
 # Load OrthoSlice module and associate it to the original volume
@@ -101,7 +102,7 @@ $origOrthoSlice setViewerMask 0
 # each parameter, up to 3 denoisings are done on the same volume (using the
 # previous results to avoid repeating computations).
 for {set iterVal 1} {$iterVal <= 3} {set iterVal [expr $iterVal+1]} {
-    foreach windowVal {11 21 51 101} {
+    foreach windowVal {11 21 31} {
         foreach similVal {0.5 0.6 0.7 0.8 0.9 1.0} {
             if {$iterVal == 1} {
                 set srcVolume $origVolume
