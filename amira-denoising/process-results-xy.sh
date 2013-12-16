@@ -109,6 +109,13 @@ crop_image() {
     mogrify -define png:format=png32 -crop $crop_dims +repage $file_name
 }
 
+# Flips the image horizontally
+flop_image() {
+    local file_name=$1
+
+    mogrify -define png:format=png32 -flop +repage $file_name
+}
+
 # Adds a label on the up-left corner with the orientation.
 label_image() {
     local file_name=$1
