@@ -5,6 +5,11 @@
 orig_dir=$1
 proc_dir=$2
 
+# Set the rotations to perform in the images
+rotation_xy=0
+rotation_xz=0
+rotation_yz=0
+
 # Set the dimensions to crop the images
 # crop_dims_xy=612x660+206+122
 # crop_dims_xz=550x706+235+98
@@ -36,6 +41,27 @@ get_orientation() {
     echo $orientation
 }
 
+get_rotation() {
+    local file_name=$1
+    local orientation
+    local rotation
+
+    orientation=$(get_orientation $file_name)
+
+    if   [[ "$orientation" == "xy" ]]; then
+        rotation=$rotation_xy
+    elif [[ "$orientation" == "xz" ]]; then
+        rotation=$rotation_xz
+    elif [[ "$orientation" == "yz" ]]; then
+        rotation=$rotation_yz
+    else
+        echo "$orientation in $file_name is unknown"
+        exit
+    fi
+
+    echo $rotation
+}
+
 # Returns the dimensions to crop the image.
 get_crop_dims() {
     local file_name=$1
@@ -56,6 +82,16 @@ get_crop_dims() {
     fi
 
     echo $crop_dims
+}
+
+# Rotates the image according to its orientation
+rotate_image() {
+    local file_name=$1
+    local rotation
+
+    rotation=$(get_rotation $file_name)
+
+    mogrify -define png:format=png32 -rotate $rotation +repage $file_name
 }
 
 # Removes background from the slice image
@@ -129,22 +165,26 @@ main() {
 
     # Process each of the XY images in the directory
     for file_name in $proc_dir/*xy.png; do
+        rotate_image $file_name
         crop_image $file_name
         label_image $file_name
     done
 
     # Process each of the XZ images in the directory
     for file_name in $proc_dir/*xz.png; do
+        rotate_image $file_name
         crop_image $file_name
         label_image $file_name
     done
 
     # Process each of the YZ images in the directory
     for file_name in $proc_dir/*yz.png; do
+        rotate_image $file_name
         crop_image $file_name
         label_image $file_name
     done
 
+    # Generate sets and supersets
     for file_name in $proc_dir/*xy.png; do
         generate_set $file_name
         label_set $file_name
