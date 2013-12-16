@@ -109,6 +109,13 @@ crop_image() {
     mogrify -define png:format=png32 -crop $crop_dims +repage $file_name
 }
 
+# Flips the image horizontally
+flop_image() {
+    local file_name=$1
+
+    mogrify -define png:format=png32 -flop +repage $file_name
+}
+
 # Adds a label on the up-left corner with the orientation.
 label_image() {
     local file_name=$1
@@ -132,7 +139,7 @@ generate_set() {
     # Join images in the three possible orientations into a single one.
     # Once again, to avoid changing the gamma value, the 32-bit PNG mode
     # must be enforced (see http://goo.gl/BVbxjS)
-    montage $proc_dir/$img_name-xy* $proc_dir/$img_name-xz* $proc_dir/$img_name-yz* -geometry +5+5 PNG32:$proc_dir/$img_name-set.png
+    montage $proc_dir/$img_name-xz* $proc_dir/$img_name-xy* $proc_dir/$img_name-yz* -geometry +5+5 PNG32:$proc_dir/$img_name-set.png
 }
 
 # Generates a name for each set and labels the image with it
@@ -167,6 +174,7 @@ main() {
     for file_name in $proc_dir/*xy.png; do
         rotate_image $file_name
         crop_image $file_name
+        flop_image $file_name
         label_image $file_name
     done
 
