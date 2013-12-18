@@ -1,10 +1,13 @@
 import math
 import numpy as np
+import sys
+import os.path
 
 from scipy import ndimage
 from scipy import misc
 
 # Initialize constants
+img_name=None
 noise_sigma = 10.0
 window_size = 21               # Search window size - must be an odd number
 patch_size = 5                 # Neighborhood size - must be an odd number
@@ -121,11 +124,11 @@ def denoise2D(nois_img, verbose=False):
 
 def get_noisy_img(orig_img):
     """
-        Tries to load a file containing additive white Gaussian noise. If it
-        does not exist, a file with noise is generated. The noise is added to
-        the image.
+    Tries to load a file containing additive white Gaussian noise. If it
+    does not exist, a file with noise is generated. The noise is added to
+    the image.
     """
-    noise_file_name = "awgn_nois.npy"
+    noise_file_name = img_name + "-awgn_nois.npy"
 
     try:
         normal_noise = np.load(noise_file_name)
@@ -150,10 +153,25 @@ def get_noisy_img(orig_img):
     return noisy_img
 
 
+def get_input_img():
+    global img_name
+
+    if len(sys.argv) == 1:
+        img_name = "lena"
+        img_size = 50, 50
+
+        print "Using default Lena image..."
+        return misc.lena()[160:160+img_size[0], 160:160+img_size[1]]
+    else:
+        file_name = sys.argv[1]
+        img_name = os.path.splitext(file_name)[0]
+
+        print "Loading input image %s..." % img_name
+        return misc.imread(file_name)
+
+
 def main():
-    print "Loading Lena image..."
-    img_size = 50, 50
-    orig_img = misc.lena()[160:160+img_size[0], 160:160+img_size[1]]
+    orig_img = get_input_img()
 
     print "Image dtype: %s" % orig_img.dtype
     print "Image size: %6d" % orig_img.size
@@ -163,12 +181,12 @@ def main():
     print "Variance: %1.5f" % orig_img.var()
     print "Standard deviation: %1.5f" % orig_img.std()
 
-    misc.imsave("orig.png", orig_img)
+    misc.imsave(img_name + "-input.png", orig_img)
 
     # Generate additive white Gaussian noise (AWGN) with specifed sigma
     print "Generating noisy image..."
     nois_img = get_noisy_img(orig_img)
-    misc.imsave("noisy.png", nois_img)
+    misc.imsave(img_name + "-noisy.png", nois_img)
 
     # Normalize image, that is, translate values in image so its distribution
     # is comparable to a normal N(0, 1) (mean = 0.0, standard deviation = 1.0).
@@ -195,7 +213,8 @@ def main():
             rest_img[x, y] = rest_val
 
     print "Storing denoised image..."
-    misc.imsave("denoised.png", rest_img)
+    misc.imsave(img_name + "-output.png", rest_img)
+
 
 if __name__ == "__main__":
     main()
