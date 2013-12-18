@@ -9,8 +9,9 @@ simple format, consult the source code available at http://goo.gl/WrpJct
 
 import array
 import io
-import struct
 import numpy
+import os.path
+import struct
 
 from scipy import ndimage
 from scipy import misc
@@ -19,12 +20,16 @@ from scipy import misc
 noise_sigma = 10.0
 
 
-def load_from_tmp(filename):
+def load_from_tmp(file_name):
     """
-    Loads a numpy array from an image file in TMP format.
+    Returns a list of numpy arrays loaded from an image file in TMP format.
+    Each array corresponds with a frame within the TMP image.
     """
+
+    img_name = os.path.splitext(file_name)
+
     # Open and read the file
-    with io.open(filename, "rb") as bin_file:
+    with io.open(file_name, "rb") as bin_file:
         # Read header
         int_size = 4                # In TMP files each int is 4 bytes
         header = bin_file.read(4 * int_size)
@@ -37,26 +42,37 @@ def load_from_tmp(filename):
 
         # Sanity check
         if len(data) != expected_data_size:
-            raise IOError("File size does not match size in header")
+            raise Exception("File size does not match size in header")
         if frames != 1:
             raise Exception("Number of frames %d!=1 not supported" % frames)
         if channels != 1:
             raise Exception("Number of channels %d!=1 not supported" % channels)
 
-    # Convert the sequence of bytes (a.k.a. string) into a one-dimensional
-    # Python array of floats
-    arr_img = array.array('f')
-    arr_img.fromstring(data)
+    # Convert each frame into a numpy array
+    imgs = []
+    frame_size = width * height * channels * float_size
 
-    # Convert the Python array into a NumPy array with the proper
-    # dimensions. 3D or multichannel images are not supported
-    one_img = numpy.array(arr_img)
-    img = one_img.reshape((height, width))
+    for frame in xrange(0, frames):
+        # Get data from the current frame
+        cur_frame_pos = frame * frame_size
+        nxt_frame_pos = cur_frame_pos + frame_size
 
-    return img
+        frame_data = data[cur_frame_pos:nxt_frame_pos]
+
+        # Convert the sequence of bytes (a.k.a. string) into a one-dimensional
+        # Python array of floats
+        arr_img = array.array('f')
+        arr_img.fromstring(frame_data)
+
+        # Convert the Python array into a NumPy array with the proper
+        # dimensions. 3D or multichannel images are not supported
+        one_img = numpy.array(arr_img)
+        imgs.append(one_img.reshape((height, width)))
+
+    return imgs
 
 
-def save_to_tmp(filename, img):
+def save_to_tmp(file_name, img):
     """
     Saves numpy array stored in img into a file with TMP format.
     """
@@ -99,7 +115,7 @@ def save_to_tmp(filename, img):
     data    = arr_img.tostring()    # Get binary format (not pretty printed)
 
     # Create/truncate and save file
-    with io.open(filename, "wb") as bin_file:
+    with io.open(file_name, "wb") as bin_file:
         bin_file.write(header)
         bin_file.write(data)
 
@@ -137,8 +153,10 @@ def get_noisy_img(orig_img):
 
 def main():
     print "Loading Lena image..."
-    img_size = 50, 50
-    orig_img = misc.lena()[160:160+img_size[0], 160:160+img_size[1]]
+    # img_size = 50, 50
+    # orig_img = misc.lena()[160:160+img_size[0], 160:160+img_size[1]]
+
+    orig_img = misc.lena()
 
     print "Image dtype: %s" % orig_img.dtype
     print "Image size: %6d" % orig_img.size
@@ -173,7 +191,7 @@ def main():
     save_to_tmp("noisy.tmp", normal_nois_img)
 
     print "Load from TMP format..."
-    loaded_img = load_from_tmp("noisy.tmp")
+    loaded_img = load_from_tmp("noisy.tmp")[0]
 
     # Check if saved and loaded image are quite similar (some small error
     # could be expected)
