@@ -3,6 +3,9 @@ Converts an image in the numpy.array format into the TMP format as defined
 in [1], and stores the TMP file in disk. For more information on this quite
 simple format, consult the source code available at http://goo.gl/WrpJct
 
+The TMP format is derived from the internal format used by the ImageStack
+library, which can be found in https://code.google.com/p/imagestack/.
+
 [1]     Adams et al. "Gaussian KD-Trees for fast high-dimensional
         filtering" (2009)
 """
