@@ -26,7 +26,6 @@ def load_from_tmp(file_name):
     Returns a list of numpy arrays loaded from an image file in TMP format.
     Each array corresponds with a frame within the TMP image.
     """
-
     img_name = os.path.splitext(file_name)
 
     # Open and read the file
@@ -80,7 +79,8 @@ def load_from_tmp(file_name):
 
 def save_to_tmp(file_name, imgs):
     """
-    Saves numpy array stored in imgs into a file with TMP format.
+    Saves numpy arrays stored in list imgs into a file with TMP format. The
+    arrays must have the same shape.
     """
     frames = len(imgs)
 
