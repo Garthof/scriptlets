@@ -66,11 +66,14 @@ def load_from_tmp(file_name):
         flat_img = numpy.array(flat_arr)
 
         if channels == 1:
-            img = flat_img.reshape((height, width))
+            norm_img = flat_img.reshape((height, width))
         else:
-            img = flat_img.reshape((height, width, channels))
+            norm_img = flat_img.reshape((height, width, channels))
 
-        imgs.append(img)
+        # Convert image values to the range between 0 and 255
+        img = norm_img * 255.0
+
+        imgs.append(img.astype(numpy.uint8))
 
     return imgs
 
@@ -119,13 +122,16 @@ def save_to_tmp(file_name, imgs):
         bin_file.write(header)
 
         for img in imgs:
+            # Normalize image. Values should stay between 0 and 1
+            norm_img = img / 255.0
+
             # Convert image into a Python array of floats. The image must be
             # reshaped first to have only one dimension
-            flat_img = img.reshape(img.size)
+            flat_img = norm_img.flatten()
             flat_arr = array.array('f', flat_img)
             data = flat_arr.tostring()  # Get binary format (not pretty printed)
 
-            # Create/truncate and save file
+            # Write frame data into file
             bin_file.write(data)
 
 
