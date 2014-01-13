@@ -44,8 +44,6 @@ def load_from_tmp(file_name):
         # Sanity check
         if len(data) != expected_data_size:
             raise Exception("File size does not match size in header")
-        if channels != 1:
-            raise Exception("Number of channels %d!=1 not supported" % channels)
 
     # Convert each frame into a numpy array
     imgs = []
@@ -60,63 +58,75 @@ def load_from_tmp(file_name):
 
         # Convert the sequence of bytes (a.k.a. string) into a one-dimensional
         # Python array of floats
-        arr_img = array.array('f')
-        arr_img.fromstring(frame_data)
+        flat_arr = array.array('f')
+        flat_arr.fromstring(frame_data)
 
         # Convert the Python array into a NumPy array with the proper
-        # dimensions. 3D or multichannel images are not supported
-        one_img = numpy.array(arr_img)
-        imgs.append(one_img.reshape((height, width)))
+        # dimensions
+        flat_img = numpy.array(flat_arr)
+
+        if channels == 1:
+            img = flat_img.reshape((height, width))
+        else:
+            img = flat_img.reshape((height, width, channels))
+
+        imgs.append(img)
 
     return imgs
 
 
-def save_to_tmp(file_name, img):
+def save_to_tmp(file_name, imgs):
     """
-    Saves numpy array stored in img into a file with TMP format.
+    Saves numpy array stored in imgs into a file with TMP format.
     """
-    # Get dimensions of the image
+    frames = len(imgs)
+
+    if frames == 0:
+        raise Exception("The list of images is empty")
+
+    # Get parameters for all images. The first image in the list is used
+    # as reference
+    img = imgs[0]
     num_dims = len(img.shape)
 
     if num_dims == 0:
-        print "Images of 0 dimensions not supported!"
-        return
+        raise Exception("Images of 0 dimensions not supported!")
 
     if num_dims == 1:
-        frames = 1
-        height = 1
-        width  = img.shape[0]
+        height   = 1
+        width    = img.shape[0]
+        channels = 1
 
     if num_dims == 2:
-        frames = 1
-        height = img.shape[0]
-        width  = img.shape[1]
+        height   = img.shape[0]
+        width    = img.shape[1]
+        channels = 1
 
     if num_dims == 3:
-        frames = img.shape[2]
-        height = img.shape[0]
-        width  = img.shape[1]
+        height   = img.shape[0]
+        width    = img.shape[1]
+        channels = img.shape[2]
 
     if num_dims >= 4:
         print "Images of 4 or more dimensions not supported!"
         return
 
-    channels = 1    # Only gray-valued images are supported
-
     # The header packs the number of frames, the width, the height, and the
     # number of channels as four integers
     header = struct.pack("iiii", frames, width, height, channels)
 
-    # Convert image into a Python array of floats. The image must be
-    # reshaped first to have only one dimension
-    one_img = img.reshape(img.size)
-    arr_img = array.array('f', one_img)
-    data    = arr_img.tostring()    # Get binary format (not pretty printed)
-
-    # Create/truncate and save file
     with io.open(file_name, "wb") as bin_file:
         bin_file.write(header)
-        bin_file.write(data)
+
+        for img in imgs:
+            # Convert image into a Python array of floats. The image must be
+            # reshaped first to have only one dimension
+            flat_img = img.reshape(img.size)
+            flat_arr = array.array('f', flat_img)
+            data = flat_arr.tostring()  # Get binary format (not pretty printed)
+
+            # Create/truncate and save file
+            bin_file.write(data)
 
 
 def get_noise(noise_file_name="awgn_nois.npy", noise_size=None, noise_sigma=10.0):
