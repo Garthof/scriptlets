@@ -15,12 +15,10 @@ import io
 import numpy
 import os.path
 import struct
+import sys
 
 from scipy import ndimage
 from scipy import misc
-
-# Initialize constants
-noise_sigma = 10.0
 
 
 def load_from_tmp(file_name):
@@ -121,28 +119,32 @@ def save_to_tmp(file_name, img):
         bin_file.write(data)
 
 
-def get_noisy_img(orig_img):
+def get_noise(noise_file_name="awgn_nois.npy", noise_size=None, noise_sigma=10.0):
     """
     Tries to load a file containing additive white Gaussian noise. If it
-    does not exist, a file with noise is generated. The noise is added to
-    the image.
+    does not exist, a file with noise is generated.
     """
-    noise_file_name = "awgn_nois.npy"
-
     try:
         normal_noise = numpy.load(noise_file_name)
         print "Load noise with standard deviation: %1.5f" % normal_noise.std()
 
     except IOError:
         print "Generate noise with standard deviation: %1.5f" % noise_sigma
-        normal_noise = numpy.random.normal(scale=noise_sigma, size=orig_img.size)
+        normal_noise = numpy.random.normal(scale=noise_sigma, size=noise_size)
         numpy.save(noise_file_name, normal_noise)
 
+    return normal_noise
+
+
+def get_noisy_img(orig_img, noise):
+    """
+    Adds noise to the image.
+    """
     # Reshape noise to the shape of the image
-    normal_noise = normal_noise.reshape(orig_img.shape)
+    noise =noise.reshape(orig_img.shape)
 
     # Add noise to the image
-    noisy_img = orig_img + normal_noise
+    noisy_img = orig_img + noise
 
     # Image values are expected to be between 0. and 255., remove values
     # outside that range. See http://goo.gl/UYDJLU
@@ -169,9 +171,18 @@ def main():
 
     misc.imsave("orig.png", orig_img)
 
-    # Generate additive white Gaussian noise (AWGN) with specifed sigma
+    # Generate additive white Gaussian noise (AWGN)
     print "Generating noisy image..."
-    nois_img = get_noisy_img(orig_img)
+
+    if len(sys.argv) == 2:
+        # Use sigma specified by the user
+        user_sigma = float(sys.argv[1])
+        noise = get_noise(noise_size=orig_img.size, noise_sigma=user_sigma)
+    else:
+        # Use default sigma
+        noise = get_noise(noise_size=orig_img.size)
+
+    nois_img = get_noisy_img(orig_img, noise)
     misc.imsave("noisy.png", nois_img)
 
     # Normalize image, that is, translate values in image so its
