@@ -79,8 +79,8 @@ def load_from_tmp(file_name):
 
 def save_to_tmp(file_name, imgs):
     """
-    Saves numpy arrays stored in list imgs into a file with TMP format. The
-    arrays must have the same shape.
+    Saves numpy arrays stored in list imgs into a file with TMP format.
+    The arrays must have the same shape.
     """
     frames = len(imgs)
 
