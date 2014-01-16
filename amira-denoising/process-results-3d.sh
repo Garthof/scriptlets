@@ -41,6 +41,7 @@ get_orientation() {
     echo $orientation
 }
 
+# Returns degrees of rotation to perform in the image.
 get_rotation() {
     local file_name=$1
     local orientation
