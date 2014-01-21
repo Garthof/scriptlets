@@ -79,7 +79,7 @@ mainWindow show
 viewer 0 setCameraType orthographic
 
 # Load original volume
-set volPath {/media/data/bzflamas/AmmoniteDenoising/datasets/volumes/Ammonit-Nano-CT/amira/Ammonit-Eo_u-cropped-141x151x180-XZ.vol.am}
+set volPath {/media/data/bzflamas/AmmoniteDenoising/datasets/volumes/Ammonit-Nano-CT/amira/center-141x151x180/Ammonit-Eo_u-cropped-141x151x180-XZ.vol.am}
 set origVolume [load $volPath]
 
 # Load OrthoSlice module and associate it to the original volume

@@ -1,0 +1,150 @@
+# Amira-Script-Object V3.0
+
+$this proc constructor {} {
+    $this script show
+
+    $this newPortMultiMenu modePort 1
+    $this modePort setLabel "Mode"
+    $this modePort setNum 0 2
+    $this modePort setLabel 0 0 "XY"
+    $this modePort setLabel 0 1 "3D"
+
+    $this newPortIntSlider itersPort
+    $this itersPort setLabel "Iterations"
+    $this itersPort setMinMax 1 5
+
+    $this newPortText patchSizePort
+    $this patchSizePort setLabel "Neighborhood size"
+    $this patchSizePort setValue "5 7 11"
+
+    $this newPortText windowSizePort
+    $this windowSizePort setLabel "Window size"
+    $this windowSizePort setValue "11 21 31"
+
+    $this newPortText similarityPort
+    $this similarityPort setLabel "Similarity"
+    $this similarityPort setValue "0.8 0.9 1.0"
+
+    $this newPortDoIt doIt
+}
+
+$this proc compute {} {
+    if {[$this doIt wasHit] != 0} {
+        $this computeDenoising
+    }
+}
+
+$this proc computeDenoising {} {
+    # Check if there is data attached to the data port
+    set inputVolume [$this data source]
+
+    if {$inputVolume eq ""} {
+        echo "No data attached to $this"
+        return
+    }
+
+    # Get parameter values
+    set modeVal [$this modePort getValue 0]
+    set itersVal [$this itersPort getValue]
+    set patchSizeVals [$this patchSizePort getValue]
+    set windowSizeVals [$this windowSizePort getValue]
+    set similarityVals [$this similarityPort getValue]
+
+    # Denoise the same volume with several combinations of parameter values. For
+    # each parameter, up to 3 denoisings are done on the same volume (using the
+    # previous results to avoid repeating computations).
+    for {set iter 1} {$iter <= $itersVal} {set iter [expr $iter+1]} {
+        foreach patchSize $patchSizeVals {
+            foreach windowSize $windowSizeVals {
+                foreach similVal $similarityVals {
+                    # Check if user requested a stop
+                    if {[$this testBreak] ne ""} {
+                        return
+                    }
+
+                    # Set the correct input volume
+                    if {$iter == 1} {
+                        set srcVolume $inputVolume
+                    } else {
+                        set srcVolume [$this getVolName [expr $iter-1] $patchSize $windowSize $similVal]
+                    }
+
+                    # Execute and time denoising script
+                    set timeResolution seconds
+                    set startTime [clock $timeResolution]
+                    set outVolume [$this denoiseVolume $srcVolume $modeVal $iter $patchSize $windowSize $similVal]
+                    set endTime [clock $timeResolution]
+
+                    # Print results
+                    set elapsedTime [expr $endTime-$startTime]
+                    echo "Time required to denoise $outVolume (seconds): $elapsedTime"
+                }
+            }
+        }
+    }
+}
+
+$this proc denoiseVolume {inVolume modeVal iterVal patchVal windowVal similVal} {
+    # Generate a copy of the original volume and orthoslice and hide
+    # the orthoslice
+    set outVolume [$inVolume duplicate]
+
+    # Denoise volume
+    $this executeNMLFilter $outVolume $modeVal $patchVal $windowVal $similVal
+
+    # Change name of the volume
+    set currVolName [$this getVolName $iterVal $patchVal $windowVal $similVal]
+    set outVolume [$outVolume setLabel $currVolName]
+
+    return $outVolume
+}
+
+$this proc executeNMLFilter {volume modeVal patchVal windowVal similarityVal} {
+    # Open an editor for the current volume
+    $volume setEditor [create HxImageVisionEditor]
+    set currFilter [$volume getEditor]
+
+    # Go to the NLM denoising filter
+    $currFilter filter setValue 14
+    $currFilter fire
+
+    # Change the parameters of the filter
+    if {$modeVal == 0} {
+        $currFilter filter setValue 1 2
+    } elseif {$modeVal == 1} {
+        $currFilter filter setValue 1 3
+    }
+
+    $currFilter neighborhood setValue $patchVal
+    $currFilter searchWindow setValue $windowVal
+    $currFilter similarityValue setValue $similarityVal
+
+    # Start filtering
+    $currFilter doIt hit
+    $currFilter fire
+}
+
+$this proc getVolName {iterVal patchVal windowVal similVal} {
+    set strIterVal [$this getStrIterVal $iterVal]
+    set strPatchVal [$this getStrPatchVal $patchVal]
+    set strWindowVal [$this getStrWindowVal $windowVal]
+    set strSimilVal [$this getStrSimilVal $similVal]
+
+    return iter-$strIterVal-patch-$strPatchVal-win-$strWindowVal-simil-$strSimilVal
+}
+
+$this proc getStrPatchVal {patchVal} {
+    return [format {%02d} $patchVal]
+}
+
+$this proc getStrIterVal {iterVal} {
+    return [format {%03d} $iterVal]
+}
+
+$this proc getStrWindowVal {windowVal} {
+    return [format {%04d} $windowVal]
+}
+
+$this proc getStrSimilVal {similVal} {
+    return [format {%02d} [expr int($similVal*10)]]
+}
