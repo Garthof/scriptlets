@@ -7,7 +7,7 @@ import tmpformat
 def main():
     if len(sys.argv) != 2:
         print "Usage: convert_to_png <tmp_name>"
-        exit()
+        sys.exit(0)
 
     tmp_name = sys.argv[1]
     img_name, img_ext = os.path.splitext(tmp_name)

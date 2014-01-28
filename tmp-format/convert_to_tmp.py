@@ -5,7 +5,7 @@ def main():
     # Check arguments
     if len(sys.argv) <= 2:
         print "Usage: convert_to_tmp <tmp_name> <image_files>"
-        exit()
+        sys.exit(0)
 
     # Get arguments
     tmp_name = sys.argv[1]
