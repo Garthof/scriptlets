@@ -1,6 +1,35 @@
-proc takeSnapshot {volName strOrientation} {
-    global orthoSlice
+proc castVolume {inputVolume} {
+    # Get value range of the input volume
+    set inVolumeMinMax [$inputVolume getRange]
+    lassign $inVolumeMinMax inVolumeMin inVolumeMax
 
+    # Set value range of the cast volume
+    set outVolumeMin 0.0
+    set outVolumeMax 255.0
+
+    # Properly set scale and offset from the parameters above
+    set scale  [expr ($outVolumeMax - $outVolumeMin) / ($inVolumeMax - $inVolumeMin)]
+    set offset [expr ($outVolumeMin / $scale) - $inVolumeMin]
+
+    # Generate cast field and set port values
+    set castField [create HxCastField]
+    $castField data connect $inputVolume
+    $castField outputType setValue 0
+    $castField scaling setValue 0 $scale
+    $castField scaling setValue 1 $offset
+
+    # Generate cast volume data
+    $castField action hit
+    $castField fire
+
+    # Set result, clean everything and return
+    set outputVolume [$castField getResult]
+    remove $castField
+
+    return $outputVolume
+}
+
+proc takeSnapshot {orthoSlice volName strOrientation} {
     if {$strOrientation eq "xy"} {
         set orientation 0
     } elseif {$strOrientation eq "xz"} {
@@ -16,27 +45,17 @@ proc takeSnapshot {volName strOrientation} {
     $orthoSlice sliceOrientation setValue $orientation
     $orthoSlice fire
 
-    viewer 0 redraw
-    viewer 0 snapshot -alpha /tmp/$volName-$strOrientation.png
-}
+    # Create an image from the orthoslice view and save as PNG format
+    $orthoSlice createImage image
+    set castImage [castVolume image]
+    $castImage save PNG /tmp/[file rootname $volName]-$strOrientation.png
 
-# Set a unique viewer
-viewer setVertical 0
+    # Clean everything
+    remove image
+    remove $castImage
 
-viewer 0 setBackgroundMode 1
-viewer 0 setBackgroundColor 0 0.0980392 0.298039
-viewer 0 setBackgroundColor2 0.686275 0.701961 0.807843
-viewer 0 setTransparencyType 5
-viewer 0 setAutoRedraw 0
-viewer 0 show
-mainWindow show
-
-# Set a parallel perspective in the viewer
-viewer 0 setCameraType orthographic
-
-# Hide any previous orthoslice in the pool
-foreach orthoSlice [all HxOrthoSlice] {
-    $orthoSlice setViewerMask 0
+    # viewer 0 redraw
+    # viewer 0 snapshot -alpha /tmp/$volName-$strOrientation.png
 }
 
 # Load OrthoSlice module and associate it to the original volume
@@ -47,12 +66,9 @@ set orthoSlice [create HxOrthoSlice]
 foreach volume [all HxUniformScalarField3] {
     $orthoSlice data connect $volume
 
-    takeSnapshot $volume "xy"
-    takeSnapshot $volume "xz"
-    takeSnapshot $volume "yz"
+    takeSnapshot $orthoSlice $volume "xy"
+    takeSnapshot $orthoSlice $volume "xz"
+    takeSnapshot $orthoSlice $volume "yz"
 }
 
-
-# Redraw viewer
-viewer 0 setAutoRedraw 1
-viewer 0 redraw
+remove $orthoSlice
