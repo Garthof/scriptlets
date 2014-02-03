@@ -23,8 +23,8 @@ global_variables() {
 }
 
 main() {
-    global_variables $*
+    global_variables $@
     process_results
 }
 
-main $*
+main $@

@@ -9,7 +9,7 @@ global_variables() {
     proc_dir=$2
 
     # Set direction
-    direction="xz"
+    direction="yz"
 
     # Set the rotations to perform in the images
     rotation_xy=270
@@ -23,8 +23,8 @@ global_variables() {
 }
 
 main() {
-    global_variables $*
+    global_variables $@
     process_results
 }
 
-main $*
+main $@
