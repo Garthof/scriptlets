@@ -1,23 +1,3 @@
-#!/usr/bin/env bash
-
-# Get directory with original files and directory to store the
-# processed files
-orig_dir=$1
-proc_dir=$2
-
-# Set the rotations to perform in the images
-rotation_xy=180
-rotation_xz=0
-rotation_yz=270
-
-# Set the dimensions to crop the images
-# crop_dims_xy=612x660+206+122
-# crop_dims_xz=550x706+235+98
-# crop_dims_yz=577x683+222+110
-crop_dims_xy=550x660+235+98
-crop_dims_xz=550x660+206+122
-crop_dims_yz=550x660+166+171
-
 # Removes extension and prefix from the file name.
 remove_prefix_sufix() {
     local file_name=$1
@@ -66,17 +46,15 @@ get_rotation() {
 # Returns the dimensions to crop the image.
 get_crop_dims() {
     local file_name=$1
-    local orientation
-    local crop_dims
 
-    orientation=$(get_orientation $file_name)
+    local orientation=$(get_orientation $file_name)
 
     if   [[ "$orientation" == "xy" ]]; then
-        crop_dims=$crop_dims_xy
+        local crop_dims=$crop_dims_xy
     elif [[ "$orientation" == "xz" ]]; then
-        crop_dims=$crop_dims_xz
+        local crop_dims=$crop_dims_xz
     elif [[ "$orientation" == "yz" ]]; then
-        crop_dims=$crop_dims_yz
+        local crop_dims=$crop_dims_yz
     else
         echo "$orientation in $file_name is unknown"
         exit
@@ -88,9 +66,8 @@ get_crop_dims() {
 # Rotates the image according to its orientation
 rotate_image() {
     local file_name=$1
-    local rotation
 
-    rotation=$(get_rotation $file_name)
+    local rotation=$(get_rotation $file_name)
 
     mogrify -define png:format=png32 -rotate $rotation +repage $file_name
 }
@@ -98,9 +75,8 @@ rotate_image() {
 # Removes background from the slice image
 crop_image() {
     local file_name=$1
-    local crop_dims
 
-    crop_dims=$(get_crop_dims $file_name)
+    local crop_dims=$(get_crop_dims $file_name)
 
     # Crop image. ImageMagick automatically converts the image into 8-bit
     # PNG based on the content, which in turn changes the gamma value. I
@@ -120,40 +96,45 @@ flop_image() {
 # Adds a label on the up-left corner with the orientation.
 label_image() {
     local file_name=$1
-    local orientation
 
-    orientation=$(get_orientation $file_name)
+    local orientation=$(get_orientation $file_name)
 
-    mogrify -define png:format=png32 -gravity NorthWest -pointsize 100 -stroke none -fill white -annotate 0x0+40+5 "$orientation" $file_name
+    mogrify -define png:format=png32 -gravity NorthWest -pointsize 30 -stroke none -fill white -annotate 0x0+10+5 "$orientation" $file_name
 }
 
 # Puts together the three views in differents orientations of the same
 # image
 generate_set() {
     local file_name=$1
-    local img_name
 
     # Get image name and remove orientation
+    local img_name
     img_name=$(remove_prefix_sufix $file_name)
     img_name=${img_name%-*}   # Remove shortest suffix matching -*
 
     # Join images in the three possible orientations into a single one.
     # Once again, to avoid changing the gamma value, the 32-bit PNG mode
     # must be enforced (see http://goo.gl/BVbxjS)
-    montage $proc_dir/$img_name-xz* $proc_dir/$img_name-xy* $proc_dir/$img_name-yz* -geometry +5+5 PNG32:$proc_dir/$img_name-set.png
+    local img_set
+    [ "$direction" = "xy" ] && img_set="$proc_dir/$img_name-xy* $proc_dir/$img_name-xz* $proc_dir/$img_name-yz*"
+    [ "$direction" = "xz" ] && img_set="$proc_dir/$img_name-xz* $proc_dir/$img_name-xy* $proc_dir/$img_name-yz*"
+    [ "$direction" = "yz" ] && img_set="$proc_dir/$img_name-yz* $proc_dir/$img_name-xz* $proc_dir/$img_name-xy*"
+    [ "$direction" = "3d" ] && img_set="$proc_dir/$img_name-xy* $proc_dir/$img_name-xz* $proc_dir/$img_name-yz*"
+
+    montage $img_set -geometry +5+5 PNG32:$proc_dir/$img_name-set.png
 }
 
 # Generates a name for each set and labels the image with it
 label_set() {
     local file_name=$1
-    local img_name
 
     # Get image name and remove orientation
+    local img_name
     img_name=$(remove_prefix_sufix $file_name)
     img_name=${img_name%-*}   # Remove shortest suffix matching -*
 
     # For some reason mogrify didn't work here, so I used convert
-    convert $proc_dir/$img_name-set.png -gravity Center -background White -pointsize 100 label:$img_name -append PNG32:$proc_dir/$img_name-set.png
+    convert $proc_dir/$img_name-set.png -gravity Center -background White -pointsize 25 label:$img_name -append PNG32:$proc_dir/$img_name-set.png
 }
 
 # Puts together sets belonging to the same iteration
@@ -163,7 +144,8 @@ generate_supersets() {
     montage $proc_dir/iter-003*-set.png -geometry +10+10 PNG32:$proc_dir/all-iter-003.png
 }
 
-main() {
+# Processes each image to generate the final collage
+process_results() {
     # Remove any previous result from the processed directory and copy
     # original images
     rm -rf $proc_dir/*
@@ -175,11 +157,11 @@ main() {
     for file_name in $proc_dir/*xy.png; do
         rotate_image $file_name
         crop_image $file_name
-        flop_image $file_name
+        [ "$direction" = "xz" ] && flop_image $file_name
         label_image $file_name
     done
 
-    # Process each of the XZ images in the directory
+    # # Process each of the XZ images in the directory
     for file_name in $proc_dir/*xz.png; do
         rotate_image $file_name
         crop_image $file_name
@@ -190,6 +172,7 @@ main() {
     for file_name in $proc_dir/*yz.png; do
         rotate_image $file_name
         crop_image $file_name
+        [ "$direction" = "yz" ] && flop_image $file_name
         label_image $file_name
     done
 
@@ -201,5 +184,3 @@ main() {
 
     generate_supersets
 }
-
-main
