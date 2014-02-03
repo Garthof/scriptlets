@@ -2,4 +2,7 @@
 *.png
 *.npy
 *.tmp
+*.spec
+build
+dist
 *~
