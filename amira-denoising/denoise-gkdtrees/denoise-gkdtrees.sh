@@ -4,8 +4,7 @@ iterative_denoise() {
         cp -R $global_output_path $global_temp_path/$global_experiment_name.backup
     fi
 
-    # Remove data in output directory and create it again
-    rm -rf $global_output_path
+    # Create output directory
     mkdir -p $global_output_path
 
     # Start iterative denoising
@@ -50,19 +49,25 @@ denoise_volume() {
     local data_stddev_val="$5"
     local spatial_stddev_val="$6"
 
-    export AMIRA_DENOISE_GKDTREES_INPUT_VOLUME="$input_volume"
-    export AMIRA_DENOISE_GKDTREES_OUTPUT_VOLUME="$output_volume"
-    export AMIRA_DENOISE_GKDTREES_PATCH_SIZE="$patch_val"
-    export AMIRA_DENOISE_GKDTREES_PCA_VALUE="$pca_val"
-    export AMIRA_DENOISE_GKDTREES_DATA_STDDEV_VALUE="$data_stddev_val"
-    export AMIRA_DENOISE_GKDTREES_SPATIAL_STDDEV_VALUE="$spatial_stddev_val"
-    export AMIRA_DENOISE_GKDTREES_SIMULATION="$global_simulation_flag"
+    if [ ! -f $output_volume ]; then
+        export AMIRA_DENOISE_GKDTREES_INPUT_VOLUME="$input_volume"
+        export AMIRA_DENOISE_GKDTREES_OUTPUT_VOLUME="$output_volume"
+        export AMIRA_DENOISE_GKDTREES_PATCH_SIZE="$patch_val"
+        export AMIRA_DENOISE_GKDTREES_PCA_VALUE="$pca_val"
+        export AMIRA_DENOISE_GKDTREES_DATA_STDDEV_VALUE="$data_stddev_val"
+        export AMIRA_DENOISE_GKDTREES_SPATIAL_STDDEV_VALUE="$spatial_stddev_val"
+        export AMIRA_DENOISE_GKDTREES_SIMULATION="$global_simulation_flag"
 
-    set +e
-    $global_amira_path/$global_amira_exec $global_amira_opt $global_script_path/$global_script_name
-    set -e
+        set +e
+        $global_amira_path/$global_amira_exec \
+                $global_amira_opt \
+                $global_script_path/$global_script_name
+        set -e
 
-    sleep $global_sleep_seconds
+        sleep $global_sleep_seconds
+    else
+        echo "Result $(basename $output_volume) already exists. Skipping..."
+    fi
 }
 
 
