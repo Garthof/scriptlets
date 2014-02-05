@@ -1,12 +1,14 @@
+#!/usr/bin/octave -qf
+
 % Load file
-s = load("Ammonit-Eo_u-cropped-141x152x180.vol.mat");
+s = load('Ammonit-Eo_u-cropped-141x152x180.vol.mat');
 
 for [val key] = s
 	data = val;
 	name = key;
 end
 
-% Normalize image? 
+% Normalize image?
 
 % Save file
-save("-mat-binary", "test.mat", "data");
+save('-mat-binary', 'test.mat', 'data');
