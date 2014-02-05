@@ -1,5 +1,3 @@
-#!/usr/bin/env bash
-
 iterative_denoise() {
     # Copy previous output to a temporary directory
     if [ -d $global_output_path ]; then
