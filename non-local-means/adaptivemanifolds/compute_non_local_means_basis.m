@@ -15,6 +15,10 @@ function [proj_patches eig_vals patches] = compute_non_local_means_basis( ...
                                                     patch_radius, ...
                                                     num_pca_dims)
 
+% Initializate the random seed to the voxel in the center of the volume,
+% as the original implementation did
+rand('seed', input_volume(round(end/2),round(end/2),round(end/2)));
+
 % Center data around the mean
 input_volume = input_volume - mean(mean(mean(input_volume)));
 
@@ -43,7 +47,7 @@ end
 
 % The total number of patches is too high for my current version of Octave.
 % I am running into some memory errors, so I am just picking some random
-% patches from the volume and compute the PCA with them
+% patches from the volume and compute the PCA with them.
 num_rand_patches = 10^3;
 rand_patches = zeros([num_rand_patches nneighbors]);
 rand_indices = unidrnd(prod(size(input_volume)), [num_rand_patches 1]);
