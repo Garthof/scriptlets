@@ -60,15 +60,16 @@ eig_vecs = flipdim(eig_vecs, 2);
 eig_vals = flipdim(diag(eig_vals),1)';
 eig_vals = eig_vals(1:num_pca_dims);
 
-% Project patches into the most important components of the eigenvectors
+% Project patches into the most significative eigenvectors. Each patch should
+% be multiplied by the eigenvectors; however, as the patch contents are
+% distributed in cell arrays, the multiplication must be performed in several
+% iterations of a loop, adding the components each time
 proj_patches = zeros([prod(size(input_volume)) num_pca_dims]);
 
-for i = 1:prod(size(input_volume))
-    for j = 1:nneighbors
-        patch(j) = patches{j}(i);
-    end
-
-    proj_patches(i, :) = patch * eig_vecs(:, 1:num_pca_dims);
+for i = 1:nneighbors
+    patch = reshape(patches{i}, [prod(size(input_volume)) 1]);
+    patch = patch * eig_vecs(i, 1:num_pca_dims);
+    proj_patches = proj_patches + patch;
 end
 
 proj_patches = reshape(proj_patches, [size(input_volume) num_pca_dims]);

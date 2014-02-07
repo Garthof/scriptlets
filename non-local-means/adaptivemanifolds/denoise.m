@@ -20,13 +20,12 @@ end
 % Convert volume to scale [0 1]
 [input_volume min_value max_value] = vol2double(input_volume);
 
-
 % Compute non-local-means patch space using 7x7 color patches reduced to
 % the specified number of dimensions
 patch_radius = 2;  %patch size is 2*patch_radius + 1;
-num_pca_dimensions = 6;
-nlmeans_space = compute_non_local_means_basis(f, patch_radius, ...
-                                              num_pca_dimensions);
+num_pca_dims = 6;
+nlmeans_space = compute_non_local_means_basis(input_volume, patch_radius, ...
+                                              num_pca_dims);
 
 
 % Save file
