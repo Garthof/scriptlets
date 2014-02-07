@@ -2,8 +2,8 @@
 %  not optimized for memory use.
 %
 %
-%  This code is part of the reference implementation of the adaptive-manifold
-%  high-dimensional filter described in the paper:
+%  This code has been adapted from the reference implementation of the
+%  adaptive-manifold high-dimensional filter described in the paper:
 %
 %    Adaptive Manifolds for Real-Time High-Dimensional Filtering
 %    Eduardo S. L. Gastal  and  Manuel M. Oliveira
