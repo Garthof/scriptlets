@@ -35,6 +35,11 @@ pca_iters = 2;
 % Compute tree height using Eq. (12)
 tree_height = 2 + compute_manifold_tree_height(sigma_s, sigma_r)
 
+% tilde_g is the output of our filter with outliers suppressed.
+[output_volume tilde_output_volume] = adaptive_manifold_filter( ...
+        input_volume, sigma_s, sigma_r, ...
+        tree_height, nlmeans_space, pca_iters);
+
 % Save file
 output_volume = input_volume;
 save('-mat-binary', output_file, 'output_volume');
