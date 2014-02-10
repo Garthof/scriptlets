@@ -41,5 +41,5 @@ tree_height = 2 + compute_manifold_tree_height(sigma_s, sigma_r)
         tree_height, nlmeans_space, pca_iters);
 
 % Save file
-output_volume = input_volume;
+output_volume = double2vol(output_volume, min_value, max_value);
 save('-mat-binary', output_file, 'output_volume');
