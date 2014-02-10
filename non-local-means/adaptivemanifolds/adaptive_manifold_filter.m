@@ -100,9 +100,9 @@ df = max(1, df);
 [h_vol w_vol d_vol] = size(in_volume);
 rvol_size = round(size(in_volume) / df);
 
-downsample = @(x) patch_space_resize( ...
+downsample = @(x) patch_space_scale( ...
                         x, [rvol_size(1) rvol_size(2) rvol_size(3)], 'linear');
-upsample   = @(x) patch_space_resize( ...
+upsample   = @(x) patch_space_scale( ...
                         x, [h_vol w_vol d_vol], 'linear');
 
 %% Splatting: project the pixel values onto the current manifold eta_k
@@ -230,12 +230,12 @@ end
 
 
 % Resize each component of the patch space separatedly
-function out_patch_space = patch_space_resize(in_patch_space, m, op)
+function out_patch_space = patch_space_scale(in_patch_space, m, op)
 
 [h w d nn] = size(in_patch_space);
 
 for n = 1:nn
-    out_patch_space(:,:,:,n) = volresize(in_patch_space(:,:,:,n), m, op);
+    out_patch_space(:,:,:,n) = volscale(in_patch_space(:,:,:,n), m, op);
 end
 
 end
@@ -243,7 +243,7 @@ end
 
 % Resize a volume of data using interp3. Kudos to Martin, who pointed me to
 % a possible solution, here: http://stackoverflow.com/a/12521658/1679
-function out_volume = volresize(in_volume, m, op)
+function out_volume = volscale(in_volume, m, op)
 
 [h w d] = size(in_volume);
 
