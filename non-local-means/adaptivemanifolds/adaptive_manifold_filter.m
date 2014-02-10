@@ -71,7 +71,7 @@ alpha = exp( -0.5 .* min_pixel_dist_to_manifold_squared ./ sigma_r ./ sigma_r );
 out_volume     = in_volume + bsxfun(@times, alpha, tilde_out_volume - in_volume);
 
 % Close progressbar
-delete(waitbar_handle);
+% delete(waitbar_handle);
 
 end
 
