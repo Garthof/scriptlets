@@ -97,7 +97,7 @@ df = min(sigma_s / 4, 256 * sigma_r);
 df = floor_to_power_of_two(df);
 df = max(1, df);
 
-[h_vol w_vol d_vol] = size(in_volume);
+[h_vol w_vol d_vol nn] = size(patch_space);
 rvol_size = round(size(in_volume) / df);
 
 downsample = @(x) patch_space_scale( ...
@@ -156,22 +156,19 @@ sum_w_ki_Psi_blur_0 = sum_w_ki_Psi_blur_0 ...
                     + bsxfun(@times, w_ki, upsample(w_ki_Psi_blur_0));
 
 %% Compute two new manifolds eta_minus and eta_plus
-
-%%% HERE I AM
 global tree_nodes_visited;
 tree_nodes_visited = tree_nodes_visited + 1;
 % waitbar(tree_nodes_visited / (2^tree_height - 1), waitbar_handle);
 
 % Test stopping criterion
 if current_tree_level < tree_height
-
     % Algorithm 1, Step 2: compute the eigenvector v1
-    X  = reshape(X, [h_vol*w_vol dR_joint]);
+    X  = reshape(X, [h_vol*w_vol*d_vol nn]);
     rand_vec = rand(1,size(X,2)) - 0.5;
     v1 = compute_eigenvector(X(cluster_k(:),:), num_pca_iters, rand_vec);
 
     % Algorithm 1, Step 3: Segment pixels into two clusters -- Eq. (6)
-    dot = reshape(X * v1', [h_vol w_vol]);
+    dot = reshape(X * v1', [h_vol w_vol d_vol]);
     cluster_minus = logical((dot <  0) & cluster_k);
     cluster_plus  = logical((dot >= 0) & cluster_k);
 
