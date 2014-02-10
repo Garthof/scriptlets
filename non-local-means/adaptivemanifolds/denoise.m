@@ -2,12 +2,29 @@
 
 % Check args
 if (nargin < 2)
-    usage('%s', [program_name() ' input_file' ' output_file']);
+    usage('%s', [program_name() ' input_file' ' output_file' 'patch_radius' ...
+                 'num_pca_dims' 'sigma_s' 'sigma_r' 'num_pca_iters']);
 end
 
 % Read args
-input_file = argv(){1};
-output_file = argv(){2};
+% Input and ouput files, in MATLAB/Octave format
+input_file = argv(){1}
+output_file = argv(){2}
+
+% Patch size is 2*patch_radius + 1
+patch_radius = str2double(argv(){3})
+
+% Number of components kept from each patch
+num_pca_dims = str2double(argv(){4})
+
+% Spatial and range standard deviations
+sigma_s = str2double(argv(){5})
+sigma_r = str2double(argv(){6})
+
+% Number of iters to quickly compute the eigenvector when building manifolds
+num_pca_iters = str2double(argv(){7})
+
+
 
 % Load file
 input_file_data = load(input_file);
@@ -22,15 +39,10 @@ end
 
 % Compute non-local-means patch space using 7x7 color patches reduced to
 % the specified number of dimensions
-patch_radius = 2  %patch size is 2*patch_radius + 1;
-num_pca_dims = 6
 patch_space = compute_non_local_means_basis(in_volume, patch_radius, ...
                                             num_pca_dims);
 
 % Filtering parameters
-sigma_s = 8
-sigma_r = 0.35
-num_pca_iters = 2;
 
 % Compute tree height using Eq. (12)
 tree_height = 2 + compute_manifold_tree_height(sigma_s, sigma_r)
