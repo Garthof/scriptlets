@@ -217,18 +217,6 @@ p = p / norm(p);
 end
 
 
-function ret = imresize_wrapper(im, m, interp)
-
-[row, col, num_planes, tmp] = size(im);
-
-% Resize plane by plane
-for plane = 1:num_planes
-    ret(:, :, plane) = imresize(im(:, :, plane), m, interp);
-end
-
-end
-
-
 % Resize each component of the patch space separatedly
 function out_patch_space = patch_space_scale(in_patch_space, m, op)
 
