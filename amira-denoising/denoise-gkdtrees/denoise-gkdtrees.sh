@@ -1,9 +1,4 @@
 iterative_denoise() {
-    # Copy previous output to a temporary directory
-    if [ -d $global_output_path ]; then
-        cp -R $global_output_path $global_temp_path/$global_experiment_name.backup
-    fi
-
     # Create output directory
     mkdir -p $global_output_path
 
