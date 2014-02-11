@@ -7,6 +7,8 @@ if (nargin < 7)
 end
 
 % Read args
+printf('Reading parameters...\n');
+
 % Input and ouput files, in MATLAB/Octave format
 input_file = argv(){1}
 output_file = argv(){2}
@@ -38,17 +40,37 @@ end
 
 % Compute non-local-means patch space using 7x7 color patches reduced to
 % the specified number of dimensions
+printf('\nComputing PCA...\n');
+t1 = time();
+
 patch_space = compute_non_local_means_basis(in_volume, patch_radius, ...
                                             num_pca_dims);
+
+t2 = time();
+elapsed_pca_time = t2-t1;
+
+printf('Time for PCA = %s\n', secs2hms(elapsed_pca_time));
 
 % Compute tree height using Eq. (12)
 tree_height = 2 + compute_manifold_tree_height(sigma_s, sigma_r)
 
 % tilde_g is the output of our filter with outliers suppressed.
+printf('\nComputing filtering...\n');
+t1 = time();
+
 [output_volume tilde_output_volume] = adaptive_manifold_filter( ...
         in_volume, sigma_s, sigma_r, ...
         tree_height, patch_space, num_pca_iters);
 
+
+t2 = time();
+elapsed_filter_time = t2-t1;
+
+printf('Time for filter = %s\n', secs2hms(elapsed_filter_time));
+printf('Total time = %s\n', secs2hms(elapsed_pca_time+elapsed_filter_time));
+
 % Save file
 output_volume = double2vol(output_volume, min_value, max_value);
 save('-mat-binary', output_file, 'output_volume');
+
+printf('\n');
