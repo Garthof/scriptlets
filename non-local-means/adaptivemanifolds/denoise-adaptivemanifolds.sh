@@ -51,7 +51,6 @@ denoise_volume() {
 
     if [ ! -f $output_volume ]; then
         $global_script_path/$global_script_name \
-                $global_script_path/$global_script_name \
                 $input_volume $output_volume \
                 $patch_val $pca_val $data_stddev_val $spatial_stddev_val \
                 $global_num_pca_iters
