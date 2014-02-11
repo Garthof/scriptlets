@@ -1,7 +1,7 @@
 #!/usr/bin/octave -qf
 
 % Check args
-if (nargin < 2)
+if (nargin < 7)
     usage('%s', [program_name() ' input_file' ' output_file' 'patch_radius' ...
                  'num_pca_dims' 'sigma_s' 'sigma_r' 'num_pca_iters']);
 end
@@ -25,7 +25,6 @@ sigma_r = str2double(argv(){6})
 num_pca_iters = str2double(argv(){7})
 
 
-
 % Load file
 input_file_data = load(input_file);
 
@@ -41,8 +40,6 @@ end
 % the specified number of dimensions
 patch_space = compute_non_local_means_basis(in_volume, patch_radius, ...
                                             num_pca_dims);
-
-% Filtering parameters
 
 % Compute tree height using Eq. (12)
 tree_height = 2 + compute_manifold_tree_height(sigma_s, sigma_r)
