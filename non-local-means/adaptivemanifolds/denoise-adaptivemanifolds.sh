@@ -66,7 +66,7 @@ get_volume_name() {
     local spatial_stddev_val="$5"
 
     printf -v formatted_iter_val "%03d" $iter_val
-    printf -v formatted_patch_val "%02d" $(($patch_radius**2 + 1))
+    printf -v formatted_patch_val "%02d" $(($patch_radius*2 + 1))
     printf -v formatted_pca_val "%03d" $pca_val
     printf -v formatted_data_stddev_val "%02.0f" $(echo "$data_stddev_val * 10.0" | bc)
     printf -v formatted_spatial_stddev_val "%02.0f" $(echo "$spatial_stddev_val * 10.0" | bc)
