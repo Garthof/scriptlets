@@ -104,7 +104,7 @@ class App:
         files_str += "-stddev-{stddev1}-{stddev2}-set.png"
         files_str = files_str.format(**params)
 
-        files = glob.glob(files_str)
+        files = sorted(glob.glob(files_str))
 
         if files:
             base_command = ""
