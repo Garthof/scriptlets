@@ -10,56 +10,80 @@ from Tkinter import *
 
 class App:
     def __init__(self, master):
-        self.lblDir = Label(master, text="Directory")
-        self.lblDir.grid(row=0, column=0, sticky=W)
+        # Upper frame
+        self.frmDir = Frame(master)
+        self.frmDir.pack(fill=X)
 
-        self.strDir = StringVar();
+        self.lblDir = Label(self.frmDir, text="Directory")
+        self.lblDir.pack(side=LEFT)
+
+        self.strDir = StringVar()
         self.strDir.set("/home/bzflamas/AmmoniteDenoising/datasets/images/output/gkdtrees-denoise-center-141x152x180/3d-direction/processed/")
-        self.txtDir = Entry(master, textvariable=self.strDir, width=60)
-        self.txtDir.grid(row=0, column=1, columnspan=2)
+        self.txtDir = Entry(self.frmDir, textvariable=self.strDir)
+        self.txtDir.pack(side=LEFT, fill=X, expand=1)
 
-        self.lblIter = Label(master, text="Iter")
-        self.lblIter.grid(row=1, column=0, sticky=W)
+        # Lower frame
+        self.frmMain = Frame(master)
+        self.frmMain.pack(fill=BOTH, expand=1)
 
-        self.txtIter = Entry(master)
-        self.txtIter.grid(row=1, column=1, sticky=W)
+        self.frmFields = Frame(self.frmMain)
+        self.frmFields.pack(side=LEFT)
 
-        self.lblPatch = Label(master, text="Patch")
-        self.lblPatch.grid(row=2, column=0, sticky=W)
+        self.frmIter = Frame(self.frmFields)
+        self.frmIter.pack()
+        self.lblIter = Label(self.frmIter, text="Iter", width=10)
+        self.lblIter.pack(side=LEFT)
+        self.strIter = StringVar()
+        self.strIter.set("1")
+        self.txtIter = Entry(self.frmIter, textvariable=self.strIter)
+        self.txtIter.pack(side=LEFT)
 
-        self.txtPatch = Entry(master)
-        self.txtPatch.grid(row=2, column=1, sticky=W)
+        self.frmPatch = Frame(self.frmFields)
+        self.frmPatch.pack()
+        self.lblPatch = Label(self.frmPatch, text="Patch", width=10)
+        self.lblPatch.pack(side=LEFT)
+        self.strPatch = StringVar()
+        self.strPatch.set("5")
+        self.txtPatch = Entry(self.frmPatch, textvariable=self.strPatch)
+        self.txtPatch.pack(side=LEFT)
 
-        self.lblPCA = Label(master, text="PCA")
-        self.lblPCA.grid(row=3, column=0, sticky=W)
+        self.frmPCA = Frame(self.frmFields)
+        self.frmPCA.pack()
+        self.lblPCA = Label(self.frmPCA, text="PCA", width=10)
+        self.lblPCA.pack(side=LEFT)
+        self.strPCA = StringVar()
+        self.strPCA.set("3")
+        self.txtPCA = Entry(self.frmPCA, textvariable=self.strPCA)
+        self.txtPCA.pack(side=LEFT)
 
-        self.txtPCA = Entry(master)
-        self.txtPCA.grid(row=3, column=1, sticky=W)
+        self.frmStdDev1 = Frame(self.frmFields)
+        self.frmStdDev1.pack()
+        self.lblStdDev1 = Label(self.frmStdDev1, text="StdDev1", width=10)
+        self.lblStdDev1.pack(side=LEFT)
+        self.txtStdDev1 = Entry(self.frmStdDev1)
+        self.txtStdDev1.pack(side=LEFT)
 
-        self.lblStdDev1 = Label(master, text="StdDev1")
-        self.lblStdDev1.grid(row=4, column=0, sticky=W)
+        self.frmStdDev2 = Frame(self.frmFields)
+        self.frmStdDev2.pack()
+        self.lblStdDev2 = Label(self.frmStdDev2, text="StdDev2", width=10)
+        self.lblStdDev2.pack(side=LEFT)
+        self.txtStdDev2 = Entry(self.frmStdDev2)
+        self.txtStdDev2.pack(side=LEFT)
 
-        self.txtStdDev1 = Entry(master)
-        self.txtStdDev1.grid(row=4, column=1, sticky=W)
+        self.btnAction = Button(self.frmFields, text="Generate", command=self.__generate_mosaic)
+        self.btnAction.pack()
 
-        self.lblStdDev2 = Label(master, text="StdDev2")
-        self.lblStdDev2.grid(row=5, column=0, sticky=W)
-
-        self.txtStdDev2 = Entry(master)
-        self.txtStdDev2.grid(row=5, column=1, sticky=W)
-
-        self.btnAction = Button(master, text="Generate", command=self.__generate_mosaic)
-        self.btnAction.grid(row=6, column=0)
-
-        self.lblImg = Label(master, text="Test")
-        self.lblImg.grid(row=1, column=2, rowspan=6, sticky=W+E+N+S)
+        self.canvas = Canvas(self.frmMain)
+        self.canvas.pack(side=LEFT, fill=BOTH, expand=1)
+        self.canvas.config(scrollregion=self.canvas.bbox(ALL))
 
     def __generate_mosaic(self):
         process_command = self.__build_process_command()
-        if not process_command: return
+        if not process_command:
+            print "No images to show"
 
         print "Generating mosaic..."
-        # subprocess.call(process_command.split())
+        subprocess.call(process_command.split())
 
         print "Displaying image..."
         self.__display_image()
@@ -84,6 +108,7 @@ class App:
         if files:
             base_command = ""
             base_command += "montage {files}"
+            base_command += " -tile 4x"
             base_command += " -geometry +10+10"
             base_command += " PNG32:{dir}/mosaic.png"
             return base_command.format(files=" ".join(files), dir=params["dir"])
@@ -92,13 +117,13 @@ class App:
         image_path = "{}/mosaic.png".format(self.txtDir.get())
 
         self.image = PIL.Image.open(image_path)
+        self.image = self.image.resize((self.image.size[0]/2, self.image.size[1]/2))
         self.photo = PIL.ImageTk.PhotoImage(self.image)
-
-        self.lblImg.config(image=self.photo)
+        self.photo_id = self.canvas.create_image(0, 0, image=self.photo, anchor=NW)
 
     def __get_int_field_value(self, field, width):
         if field.get():
-            str_format = "{:0" + width + "d}"
+            str_format = "{:0" + str(width) + "d}"
             return str_format.format(int(field.get()))
         else:
             return "*"
