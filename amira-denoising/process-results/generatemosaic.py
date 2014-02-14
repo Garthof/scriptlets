@@ -81,6 +81,7 @@ class App:
         process_command = self.__build_process_command()
         if not process_command:
             print "No images to show"
+            return
 
         print "Generating mosaic..."
         subprocess.call(process_command.split())
