@@ -20,8 +20,14 @@ compute_correct_patch_size() {
 
 main() {
     local dir_name=$1
-    local file_name
 
+    set -e
+
+    local tmp_dir="/tmp/fix-patch-size"
+    rm -rf $tmp_dir
+    mkdir -p $tmp_dir
+
+    local file_name
     for file_name in $dir_name/*.mat; do
         file_name=$(basename $file_name)
         local old_patch_size=$(get_current_patch_size $file_name)
@@ -32,8 +38,10 @@ main() {
         local file_name_suffix=${file_name#iter-*patch-*-}
         local new_file_name=${file_name_preffix}-${new_patch_size}-${file_name_suffix}
 
-        mv $dir_name/$file_name $dir_name/$new_file_name
+        mv $dir_name/$file_name $tmp_dir/$new_file_name
     done
+
+    cp $tmp_dir/* $dir_name
 }
 
 main $@
