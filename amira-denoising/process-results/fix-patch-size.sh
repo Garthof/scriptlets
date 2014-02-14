@@ -26,6 +26,7 @@ main() {
         file_name=$(basename $file_name)
         local old_patch_size=$(get_current_patch_size $file_name)
         local new_patch_size=$(compute_correct_patch_size $old_patch_size)
+        printf -v new_patch_size "%02d" $new_patch_size
 
         local file_name_preffix=${file_name%-*-pca*}
         local file_name_suffix=${file_name#iter-*patch-*-}
