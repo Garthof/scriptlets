@@ -11,7 +11,7 @@ from scipy import misc
 from scipy.cluster import vq
 
 # Initialize constants
-num_clusters = 50
+num_clusters = 5
 max_iters = 10
 patch_radius = 2                 # Neighborhood size
 
