@@ -6,7 +6,7 @@ import numpy as np
 import random
 import scipy.io as sio
 import sys
-import os.path
+import os
 
 from scipy import ndimage
 from scipy import misc
@@ -57,9 +57,9 @@ def build_patches(vol, patch_radius):
 
 
 def load_input_vol(file_name):
-    vol_name = os.path.splitext(file_name)[0]
+    vol_name = os.path.split(file_name)[1]
+    vol_name = os.path.splitext(vol_name)[0]
 
-    print "Loading input volume %s..." % vol_name
     file_contents = sio.loadmat(file_name)
 
     for key in file_contents:
@@ -88,6 +88,7 @@ def parse_args():
 
     return parser.parse_args()
 
+
 def main():
     # Parse args
     args = parse_args()
@@ -104,9 +105,11 @@ def main():
     print "Patch radius: %d" % patch_radius
 
     # Load volume and print stats
+    print "Loading input volume..."
     vol, vol_name = load_input_vol(input_file)
     depth, height, width = vol.shape
 
+    print "Volume name: %s" % vol_name
     print "Volume dtype: %s" % vol.dtype
     print "Volume size: %6d" % vol.size
     print "Volume shape: %3dx%3dx%3d" % (vol.shape[0], vol.shape[1], vol.shape[2])
