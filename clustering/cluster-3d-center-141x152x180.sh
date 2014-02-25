@@ -45,7 +45,7 @@ cluster_volume() {
     local patch_radius="$5"
 
     if [ ! -f $output_volume ]; then
-        $global_script_path/$global_script_name \
+        time $global_script_path/$global_script_name \
                 $input_volume $output_volume \
                 -i $max_iters -n $num_clusters -p $patch_radius
 
