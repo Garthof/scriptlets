@@ -5,7 +5,7 @@ global_variables() {
     global_script_name="scicluster3d.py"
 
     global_max_iters="5 10 15"
-    global_patch_radius="2 3 5"
+    global_patch_radius="1 2"
     global_num_clusters="2 3 4 5 6 7 8"
 
     global_volume_name="equalized-contrast-188-uchar.mat"
