@@ -13,7 +13,7 @@ global_variables() {
     global_input_path="/media/data/bzflamas/AmmoniteDenoising/datasets/volumes/output/$global_experiment_name"
     global_output_path="/home/bzflamas/AmmoniteDenoising/datasets/volumes/output/$global_experiment_name"
 
-    global_sleep_seconds="3"
+    global_sleep_seconds="1"
 }
 
 
