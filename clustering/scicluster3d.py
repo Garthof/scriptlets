@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import argparse
 import math
 import numpy as np
 import random
@@ -12,9 +13,9 @@ from scipy import misc
 from scipy.cluster import vq
 
 # Initialize constants
-num_clusters = 5
-max_iters = 10
-patch_radius = 2                 # Neighborhood size
+default_num_clusters = 5
+default_max_iters = 10
+default_patch_radius = 2                 # Neighborhood size
 
 
 def circshift3d(arr, shift):
@@ -55,8 +56,7 @@ def build_patches(vol, patch_radius):
     return patches
 
 
-def load_input_vol():
-    file_name = sys.argv[1]
+def load_input_vol(file_name):
     vol_name = os.path.splitext(file_name)[0]
 
     print "Loading input volume %s..." % vol_name
@@ -70,18 +70,41 @@ def load_input_vol():
     return vol, vol_name
 
 
-def save_output_vol(vol, vol_name):
-    file_name = sys.argv[2]
+def save_output_vol(vol, vol_name, file_name):
     sio.savemat(file_name, {vol_name: vol})
 
 
+def parse_args():
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument("input_file")
+    parser.add_argument("output_file")
+    parser.add_argument("-n", "--num_clusters",
+                        type=int, default=default_num_clusters)
+    parser.add_argument("-i", "--max_iters",
+                        type=int, default=default_max_iters)
+    parser.add_argument("-p", "--patch_radius",
+                        type=int, default=default_patch_radius)
+
+    return parser.parse_args()
+
 def main():
-    if len(sys.argv) != 3:
-        print "Usage: %s %s %s" % (sys.argv[0], "<input.mat>", "<ouput.mat>")
-        sys.exit(-1)
+    # Parse args
+    args = parse_args()
+    input_file = args.input_file
+    output_file = args.output_file
+    num_clusters = args.num_clusters
+    max_iters = args.max_iters
+    patch_radius = args.patch_radius
+
+    print "Input file: %s" % input_file
+    print "Output file: %s" % output_file
+    print "Number of clusters: %d" % num_clusters
+    print "Max iterations: %d" % max_iters
+    print "Patch radius: %d" % patch_radius
 
     # Load volume and print stats
-    vol, vol_name = load_input_vol()
+    vol, vol_name = load_input_vol(input_file)
     depth, height, width = vol.shape
 
     print "Volume dtype: %s" % vol.dtype
@@ -113,7 +136,7 @@ def main():
     # print "Saving image..."
     clusters = clusters.reshape((depth, height, width))
     clusters = clusters.astype(vol.dtype)
-    save_output_vol(clusters, vol_name)
+    save_output_vol(clusters, vol_name, output_file)
 
 if __name__ == "__main__":
     main()
