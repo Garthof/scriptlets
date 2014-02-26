@@ -29,7 +29,12 @@ proc castVolume {inputVolume} {
     return $outputVolume
 }
 
-proc takeSnapshot {orthoSlice volName strOrientation} {
+proc takeSnapshot {volName strOrientation} {
+
+    # Load OrthoSlice module and associate it to the original volume
+    set orthoSlice [create HxOrthoSlice]
+    $orthoSlice data connect $volName
+
     if {$strOrientation eq "xy"} {
         set orientation 0
     } elseif {$strOrientation eq "xz"} {
@@ -53,22 +58,21 @@ proc takeSnapshot {orthoSlice volName strOrientation} {
     # Clean everything
     remove image
     remove $castImage
+    remove $orthoSlice
 
     # viewer 0 redraw
     # viewer 0 snapshot -alpha /tmp/$volName-$strOrientation.png
 }
 
-# Load OrthoSlice module and associate it to the original volume
-set orthoSlice [create HxOrthoSlice]
+proc main {} {
+    # Take three snapshots of each uniform scalar field in the pool, each snapshot
+    # with a different orientation
+    foreach volume [all HxUniformScalarField3] {
 
-# Take three snapshots of each uniform scalar field in the pool, each snapshot
-# with a different orientation
-foreach volume [all HxUniformScalarField3] {
-    $orthoSlice data connect $volume
-
-    takeSnapshot $orthoSlice $volume "xy"
-    takeSnapshot $orthoSlice $volume "xz"
-    takeSnapshot $orthoSlice $volume "yz"
+        takeSnapshot $volume "xy"
+        takeSnapshot $volume "xz"
+        takeSnapshot $volume "yz"
+    }
 }
 
-remove $orthoSlice
+main
