@@ -66,7 +66,7 @@ get_volume_name() {
     printf -v formatted_patch_val "%02d" $(($patch_radius*2 + 1))
 
     local result=""
-    result=$result"iters-${formatted_iters_val}"
+    result=$result"iter-${formatted_iters_val}"
     result=$result"-clusters-${formatted_clusters_val}"
     result=$result"-patch-${formatted_patch_val}"
     result=$result".mat"
