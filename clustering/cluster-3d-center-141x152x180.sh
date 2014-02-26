@@ -4,9 +4,9 @@ global_variables() {
     global_script_path="/home/bzflamas/scriptlets/clustering"
     global_script_name="scicluster3d.py"
 
-    global_max_iters="5 10 15"
+    global_max_iters="5 10 15 20 25"
     global_patch_radius="1 2"
-    global_num_clusters="2 3 4 5 6 7 8"
+    global_num_clusters="2 3 4 5 6 7 8 9 10"
 
     global_volume_name="equalized-contrast-188-uchar.mat"
     global_experiment_name="equalization-center-141x152x180"
