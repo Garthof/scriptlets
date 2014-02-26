@@ -18,7 +18,7 @@ class App:
         self.lblDir.pack(side=LEFT)
 
         self.strDir = StringVar()
-        self.strDir.set("/home/bzflamas/AmmoniteDenoising/datasets/images/output/gkdtrees-denoise-center-141x152x180/3d-direction/processed/")
+        self.strDir.set("/home/bzflamas/AmmoniteDenoising/datasets/images/output/adaptivemanifolds-center-141x152x180/processed/")
         self.txtDir = Entry(self.frmDir, textvariable=self.strDir)
         self.txtDir.pack(side=LEFT, fill=X, expand=1)
 
@@ -109,7 +109,7 @@ class App:
         if files:
             base_command = ""
             base_command += "montage {files}"
-            base_command += " -tile 4x"
+            # base_command += " -tile 4x"
             base_command += " -geometry +10+10"
             base_command += " PNG32:{dir}/mosaic.png"
             return base_command.format(files=" ".join(files), dir=params["dir"])
