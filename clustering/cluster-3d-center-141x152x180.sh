@@ -9,7 +9,7 @@ global_variables() {
     global_num_clusters="2 3 4 5 6 7 8 9 10"
 
     global_volume_name="equalized-contrast-188-uchar.mat"
-    global_experiment_name="equalization-center-141x152x180"
+    global_experiment_name="cluster-equalized-3d-center-141x152x180"
     global_input_path="/media/data/bzflamas/AmmoniteDenoising/datasets/volumes/output/$global_experiment_name"
     global_output_path="/home/bzflamas/AmmoniteDenoising/datasets/volumes/output/$global_experiment_name"
 
