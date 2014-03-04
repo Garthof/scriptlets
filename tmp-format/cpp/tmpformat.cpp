@@ -78,10 +78,10 @@ TmpFormat::saveFile(
 
     // Store data
     const std::streamsize dataSize =
-            data.frames * data.width * data.height * data.channels
-            * sizeof(*data.data);
+            data.frames * data.width * data.height * data.channels;
 
-    file.write(reinterpret_cast<const char *>(data.data), dataSize);
+    file.write(reinterpret_cast<const char *>(data.data),
+               dataSize * sizeof(*data.data));
 
     // Clean and exit
     file.close();
@@ -118,6 +118,7 @@ parseData(const char *const rawData)
 }
 
 
+#if 0
 // Main for testing purposes
 
 int
@@ -128,3 +129,4 @@ main()
 
     exit(EXIT_SUCCESS);
 }
+#endif
