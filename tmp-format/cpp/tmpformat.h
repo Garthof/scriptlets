@@ -16,8 +16,6 @@ namespace TmpFormat {
 
     public:
         const float *data;
-
-    private:
         const int frames;
         const int width;
         const int height;
@@ -30,7 +28,7 @@ namespace TmpFormat {
 
     /// Saves TmpData
     void
-    saveFile(const std::string fileName, const TmpData &data);
+    saveFile(const std::string fileName, const TmpData data);
 
 };
 

@@ -56,6 +56,38 @@ TmpFormat::loadFile(const std::string fileName)
 }
 
 
+void
+TmpFormat::saveFile(
+        const std::string fileName,
+        const TmpFormat::TmpData data)
+{
+    // Open file
+    std::ofstream file;
+    file.open(fileName.c_str(),
+              std::ios::out | std::ios::binary | std::ios::trunc);
+
+    // Store header
+    file.write(reinterpret_cast<const char *>(&data.frames),
+               sizeof(data.frames));
+    file.write(reinterpret_cast<const char *>(&data.width),
+               sizeof(data.width));
+    file.write(reinterpret_cast<const char *>(&data.height),
+               sizeof(data.height));
+    file.write(reinterpret_cast<const char *>(&data.channels),
+               sizeof(data.channels));
+
+    // Store data
+    const std::streamsize dataSize =
+            data.frames * data.width * data.height * data.channels
+            * sizeof(*data.data);
+
+    file.write(reinterpret_cast<const char *>(data.data), dataSize);
+
+    // Clean and exit
+    file.close();
+}
+
+
 // Auxiliary functions
 
 TmpFormat::TmpData
@@ -86,12 +118,13 @@ parseData(const char *const rawData)
 }
 
 
-// Main for testing purposes.
+// Main for testing purposes
 
 int
 main()
 {
     TmpFormat::TmpData data = TmpFormat::loadFile("../lena.tmp");
+    TmpFormat::saveFile("../output.tmp", data);
 
     exit(EXIT_SUCCESS);
 }
