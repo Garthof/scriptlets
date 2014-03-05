@@ -132,6 +132,24 @@ CUDAPCA::uploadData(
 }
 
 
+std::auto_ptr<CUDAPCA::data_t>
+CUDAPCA::downloadData(const CUDAPCA::CUDAPCAData &d_data)
+{
+    const int dataSize = d_data.depth * d_data.height * d_data.width;
+    data_t *h_data;
+
+    // Allocate space in host and copy data from GPU memory
+    cudaCheckReturn(cudaMallocHost((void **) &h_data,
+                                   dataSize * sizeof(*h_data)));
+
+    cudaCheckReturn(cudaMemcpy(h_data, d_data.data,
+                               dataSize * sizeof(*h_data),
+                               cudaMemcpyDeviceToHost));
+
+    return std::auto_ptr<data_t>(h_data);
+}
+
+
 CUDAPCA::CUDAPCAPatches
 CUDAPCA::generatePatches(
         const CUDAPCA::CUDAPCAData &d_data,
@@ -161,4 +179,25 @@ CUDAPCA::generatePatches(
     return CUDAPCA::CUDAPCAPatches(
             d_data.depth, d_data.width, d_data.height,
             patchRadius, d_patchData);
+}
+
+
+std::auto_ptr<CUDAPCA::data_t>
+CUDAPCA::downloadPatches(const CUDAPCA::CUDAPCAPatches &d_patches)
+{
+    const int patchDiam = (2 * d_patches.patchRadius + 1);
+    const int patchSize = patchDiam * patchDiam * patchDiam;
+    const int patchesSize = d_patches.depth * d_patches.height
+                            * d_patches.width * patchSize;
+    data_t *h_patches;
+
+    // Allocate space in host and copy data from GPU memory
+    cudaCheckReturn(cudaMallocHost((void **) &h_patches,
+                                   patchesSize * sizeof(*h_patches)));
+
+    cudaCheckReturn(cudaMemcpy(h_patches, d_patches.data,
+                               patchesSize * sizeof(*h_patches),
+                               cudaMemcpyDeviceToHost));
+
+    return std::auto_ptr<data_t>(h_patches);
 }

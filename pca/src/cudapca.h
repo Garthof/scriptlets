@@ -3,6 +3,8 @@
 
 #include <cstdlib>
 
+#include <memory>
+
 namespace CUDAPCA {
 
     /// Basic data type.
@@ -46,10 +48,18 @@ namespace CUDAPCA {
                const int width,
                const void *const h_data);
 
+    /// Download data from GPU.
+    std::auto_ptr<data_t>
+    downloadData(const CUDAPCAData &d_data);
+
     /// Generate patches for each data element.
     CUDAPCAPatches
     generatePatches(const CUDAPCAData &d_data,
                     const int patchRadius);
+
+    /// Download patches from GPU.
+    std::auto_ptr<data_t>
+    downloadPatches(const CUDAPCAPatches &d_patches);
 
     /// Compute eigenvectors from the patch space. Eigenvectors must be ordered
     /// by their eigenvalues (higher eigenvalues come first).
