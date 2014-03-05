@@ -22,11 +22,13 @@ namespace TmpFormat {
         const int channels;
     };
 
-    /// Load file contents and generates a TmpData.
+    /// Load file contents and generates a TmpData. Notice that the number
+    /// of frames is interpreted as the depth in case of 3D volumes.
     TmpData
     loadFile(const std::string fileName);
 
-    /// Saves TmpData.
+    /// Saves TmpData. Notice that the number of frames is interpreted as
+    /// the depth in case of 3D volumes.
     void
     saveFile(const std::string fileName, const TmpData &data);
 
