@@ -10,12 +10,12 @@ namespace TmpFormat {
     public:
         TmpData(const int frames, const int width,
                 const int height, const int channels,
-                const float *data);
+                const float *const data);
 
         ~TmpData();
 
     public:
-        const float *data;
+        const float *const data;
         const int frames;
         const int width;
         const int height;

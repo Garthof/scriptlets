@@ -15,7 +15,7 @@ parseData(const char *const rawData);
 TmpFormat::TmpData::TmpData(
         const int _frames, const int _width,
         const int _height, const int _channels,
-        const float *_data)
+        const float *const _data)
     : data(_data)
     , frames(_frames)
     , width(_width)
