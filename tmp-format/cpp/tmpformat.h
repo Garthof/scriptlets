@@ -28,7 +28,7 @@ namespace TmpFormat {
 
     /// Saves TmpData.
     void
-    saveFile(const std::string fileName, const TmpData data);
+    saveFile(const std::string fileName, const TmpData &data);
 
 };
 

@@ -59,7 +59,7 @@ TmpFormat::loadFile(const std::string fileName)
 void
 TmpFormat::saveFile(
         const std::string fileName,
-        const TmpFormat::TmpData data)
+        const TmpFormat::TmpData &data)
 {
     // Open file
     std::ofstream file;
