@@ -21,7 +21,7 @@ from scipy import ndimage
 from scipy import misc
 
 
-def load_from_tmp(file_name):
+def load_from_tmp(file_name, ret_img=True):
     """
     Returns a list of numpy arrays loaded from an image file in TMP format.
     Each array corresponds with a frame within the TMP image.
@@ -69,15 +69,19 @@ def load_from_tmp(file_name):
         else:
             norm_img = flat_img.reshape((height, width, channels))
 
-        # Convert image values to the range between 0 and 255
-        img = norm_img * 255.0
+        if ret_img:
+            # Convert image values to the range between 0 and 255
+            img = norm_img * 255.0
+            img = img.astype(numpy.uint8)
+        else:
+            img = norm_img.astype(numpy.float32)
 
-        imgs.append(img.astype(numpy.uint8))
+        imgs.append(img)
 
     return imgs
 
 
-def save_to_tmp(file_name, imgs):
+def save_to_tmp(file_name, imgs, normalize=True):
     """
     Saves numpy arrays stored in list imgs into a file with TMP format.
     The arrays must have the same shape.
@@ -123,7 +127,10 @@ def save_to_tmp(file_name, imgs):
 
         for img in imgs:
             # Normalize image. Values should stay between 0 and 1
-            norm_img = img / 255.0
+            if normalize:
+                norm_img = img / 255.0
+            else:
+                norm_img = img
 
             # Convert image into a Python array of floats. The image must be
             # reshaped first to have only one dimension
