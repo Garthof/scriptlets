@@ -217,3 +217,62 @@ CUDAPCA::downloadPatches(const CUDAPCA::CUDAPCAPatches &d_patches)
 
     return std::auto_ptr<data_t>(h_patches);
 }
+
+
+CUDAPCA::CUDAPCAData
+CUDAPCA::generateEigenvecs(const CUDAPCA::CUDAPCAPatches &d_patches)
+{
+    // Create CUBLAS handle
+    cublasHandle_t handle;
+    cublasCheck(cublasCreate(&handle));
+
+    // Compute main of all patches.
+    // Generate device vector with ones.
+    const int dataSize = d_patches.depth * d_patches.height * d_patches.width;
+    const thrust::device_vector<data_t> d_ones(dataSize, 1.f);
+
+    // Multiply patch space by device vector in order to sum all the
+    // patches in a component-wise function. CUBLAS gemv function
+    // computes y = aAx + by, and expects the matrix A to be in
+    // column-major format. As currently each row is a single patch,
+    // I do not need transpose the matrix.
+    const int patchDiam = (2 * d_patches.patchRadius + 1);
+    const int patchSize = patchDiam * patchDiam * patchDiam;
+    const data_t alpha = 1;
+    const data_t beta = 0;
+
+    thrust::device_vector<data_t> d_mean(patchSize);
+
+#ifdef CUDAPCA_USE_FLOAT
+#define cublasXgemv cublasSgemv
+#else
+#define cublasXgemv cublasDgemv
+#endif
+
+    cublasCheck(cublasXgemv(handle, CUBLAS_OP_N,
+                            patchSize, dataSize,
+                            &alpha,
+                            d_patches.data, patchSize,
+                            d_ones.data().get(), 1,
+                            &beta,
+                            d_mean.data().get(), 1));
+
+#define TEST_EIGEN_SUM
+#ifdef TEST_EIGEN_SUM
+    // Get values of sum and return them
+    data_t *d_mean_copy;
+
+    cudaCheck(cudaMalloc((void**) &d_mean_copy,
+                         patchSize * sizeof(*d_mean_copy)));
+
+    cudaCheck(cudaMemcpy(d_mean_copy, d_mean.data().get(),
+                         patchSize * sizeof(*d_mean_copy),
+                         cudaMemcpyHostToDevice));
+
+    return CUDAPCAData(1, 1, patchSize, d_mean_copy);
+#endif
+
+    // Clean and return
+    cublasCheck(cublasDestroy(handle));
+    return CUDAPCAData(0, 0, 0, 0);
+}

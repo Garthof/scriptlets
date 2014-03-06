@@ -45,6 +45,18 @@ main(void) {
 
     TmpFormat::saveFile("t_patches.tmp", t_tmpPatches);
 
+    // Test eigenvectors
+    const CUDAPCA::CUDAPCAData d_eigenvecs =
+            CUDAPCA::generateEigenvecs(d_patches);
+
+    const std::auto_ptr<CUDAPCA::data_t> h_eigenvecs =
+            CUDAPCA::downloadData(d_eigenvecs);
+    const TmpFormat::TmpData t_eigenvecs(d_eigenvecs.depth, d_eigenvecs.width,
+                                         d_eigenvecs.height, 1,
+                                         h_eigenvecs.get());
+
+    TmpFormat::saveFile("t_eigenvecs.tmp", t_eigenvecs);
+
 
     exit(EXIT_SUCCESS);
 }

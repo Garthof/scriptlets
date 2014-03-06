@@ -68,7 +68,7 @@ namespace CUDAPCA {
     /// Compute eigenvectors from the patch space. Eigenvectors must be ordered
     /// by their eigenvalues (higher eigenvalues come first).
     CUDAPCAData
-    generateEigenvecs(const CUDAPCAData &d_patches);
+    generateEigenvecs(const CUDAPCAPatches &d_patches);
 
     /// Project patches into the first eigenvectors.
     CUDAPCAData
