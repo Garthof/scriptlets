@@ -143,7 +143,7 @@ CUDAPCA::uploadData(
                          cudaMemcpyHostToDevice));
 
     // Generate CUDAPCAData object and return
-    CUDAPCA::CUDAPCAData h_pcaData(depth, width, height, d_data);
+    CUDAPCAData h_pcaData(depth, width, height, d_data);
     return h_pcaData;
 }
 
@@ -172,7 +172,7 @@ CUDAPCA::generatePatches(
         const int patchRadius)
 {
     // Allocate patch space in GPU memory
-    const int patchDiam = (2 * patchRadius + 1);
+    const int patchDiam = 2 * patchRadius + 1;
     const int patchSize = patchDiam * patchDiam * patchDiam;
     const int dataSize = d_data.depth * d_data.height * d_data.width;
 
@@ -192,7 +192,7 @@ CUDAPCA::generatePatches(
     cudaCheck(cudaThreadSynchronize());
     cudaCheck(cudaGetLastError());
 
-    return CUDAPCA::CUDAPCAPatches(
+    return CUDAPCAPatches(
             d_data.depth, d_data.width, d_data.height,
             patchRadius, d_patchData);
 }
@@ -201,7 +201,7 @@ CUDAPCA::generatePatches(
 std::auto_ptr<CUDAPCA::data_t>
 CUDAPCA::downloadPatches(const CUDAPCA::CUDAPCAPatches &d_patches)
 {
-    const int patchDiam = (2 * d_patches.patchRadius + 1);
+    const int patchDiam = 2 * d_patches.patchRadius + 1;
     const int patchSize = patchDiam * patchDiam * patchDiam;
     const int patchesSize = d_patches.depth * d_patches.height
                             * d_patches.width * patchSize;
