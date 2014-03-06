@@ -6,7 +6,7 @@
 // Auxiliary functions
 
 inline void
-cudaCheckReturn(const cudaError_t stat) {
+cudaCheck(const cudaError_t stat) {
     if (stat != cudaSuccess) {
         fprintf(stderr, "Error %s at line %d in file %s\n",
                 cudaGetErrorString(stat), __LINE__, __FILE__);
@@ -88,7 +88,7 @@ CUDAPCA::CUDAPCAData::CUDAPCAData(
 CUDAPCA::CUDAPCAData::~CUDAPCAData() {
     printf("Releasing GPU memory...\n");
     void *cData = const_cast<void *>(static_cast<const void *>(data));
-    cudaCheckReturn(cudaFree(cData));
+    cudaCheck(cudaFree(cData));
 }
 
 
@@ -119,12 +119,12 @@ CUDAPCA::uploadData(
     data_t *d_data;
 
     // Allocate and copy data to GPU memory
-    cudaCheckReturn(cudaMalloc((void**) &d_data,
-                               dataSize * sizeof(*d_data)));
+    cudaCheck(cudaMalloc((void**) &d_data,
+                         dataSize * sizeof(*d_data)));
 
-    cudaCheckReturn(cudaMemcpy(d_data, h_data,
-                               dataSize * sizeof(*d_data),
-                               cudaMemcpyHostToDevice));
+    cudaCheck(cudaMemcpy(d_data, h_data,
+                         dataSize * sizeof(*d_data),
+                         cudaMemcpyHostToDevice));
 
     // Generate CUDAPCAData object and return
     CUDAPCA::CUDAPCAData h_pcaData(depth, width, height, d_data);
@@ -139,12 +139,12 @@ CUDAPCA::downloadData(const CUDAPCA::CUDAPCAData &d_data)
     data_t *h_data;
 
     // Allocate space in host and copy data from GPU memory
-    cudaCheckReturn(cudaMallocHost((void **) &h_data,
-                                   dataSize * sizeof(*h_data)));
+    cudaCheck(cudaMallocHost((void **) &h_data,
+                             dataSize * sizeof(*h_data)));
 
-    cudaCheckReturn(cudaMemcpy(h_data, d_data.data,
-                               dataSize * sizeof(*h_data),
-                               cudaMemcpyDeviceToHost));
+    cudaCheck(cudaMemcpy(h_data, d_data.data,
+                         dataSize * sizeof(*h_data),
+                         cudaMemcpyDeviceToHost));
 
     return std::auto_ptr<data_t>(h_data);
 }
@@ -161,7 +161,7 @@ CUDAPCA::generatePatches(
     const int dataSize = d_data.depth * d_data.height * d_data.width;
 
     data_t *d_patchData;
-    cudaCheckReturn(cudaMalloc((void **) &d_patchData,
+    cudaCheck(cudaMalloc((void **) &d_patchData,
                                patchSize * dataSize * sizeof(*d_patchData)));
 
     // Launch kernel and wait to finish
@@ -173,8 +173,8 @@ CUDAPCA::generatePatches(
             d_data.depth, d_data.width, d_data.height,
             patchRadius);
 
-    cudaCheckReturn(cudaThreadSynchronize());
-    cudaCheckReturn(cudaGetLastError());
+    cudaCheck(cudaThreadSynchronize());
+    cudaCheck(cudaGetLastError());
 
     return CUDAPCA::CUDAPCAPatches(
             d_data.depth, d_data.width, d_data.height,
@@ -192,12 +192,12 @@ CUDAPCA::downloadPatches(const CUDAPCA::CUDAPCAPatches &d_patches)
     data_t *h_patches;
 
     // Allocate space in host and copy data from GPU memory
-    cudaCheckReturn(cudaMallocHost((void **) &h_patches,
-                                   patchesSize * sizeof(*h_patches)));
+    cudaCheck(cudaMallocHost((void **) &h_patches,
+                             patchesSize * sizeof(*h_patches)));
 
-    cudaCheckReturn(cudaMemcpy(h_patches, d_patches.data,
-                               patchesSize * sizeof(*h_patches),
-                               cudaMemcpyDeviceToHost));
+    cudaCheck(cudaMemcpy(h_patches, d_patches.data,
+                         patchesSize * sizeof(*h_patches),
+                         cudaMemcpyDeviceToHost));
 
     return std::auto_ptr<data_t>(h_patches);
 }
