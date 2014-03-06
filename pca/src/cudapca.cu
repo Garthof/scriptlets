@@ -287,7 +287,7 @@ CUDAPCA::generateEigenvecs(const CUDAPCA::CUDAPCAPatches &d_patches)
                             d_sum.data().get(), 1,
                             d_mean.data().get(), 1));
 
-#define TEST_EIGEN_MEAN
+//#define TEST_EIGEN_MEAN
 #ifdef TEST_EIGEN_MEAN
     // Get values of mean and return them
     data_t *d_mean_copy;
@@ -300,6 +300,38 @@ CUDAPCA::generateEigenvecs(const CUDAPCA::CUDAPCAPatches &d_patches)
                          cudaMemcpyHostToDevice));
 
     return CUDAPCAData(1, 1, patchSize, d_mean_copy);
+#endif
+
+    // Compute the product of all patches with its transpose. This
+    // is equivalent a computing the product of all random variables
+    // (each patch is a sample of patchSize random variables). The
+    // resulting matrix contains in cell (i,j) the sum of the products
+    // of the elements i and j of all patches.
+    thrust::device_vector<data_t> d_prod(patchSize * patchSize);
+    alpha = 1.f;
+    beta = 0.f;
+
+    cublasCheck(cublasSgemm(handle, CUBLAS_OP_N, CUBLAS_OP_T,
+                            patchSize, patchSize, dataSize,
+                            &alpha,
+                            d_patches.data, patchSize,
+                            d_patches.data, patchSize,
+                            &beta,
+                            d_prod.data().get(), patchSize));
+
+#define TEST_EIGEN_PROD
+#ifdef TEST_EIGEN_PROD
+    // Get values of product and return them
+    data_t *d_prod_copy;
+
+    cudaCheck(cudaMalloc((void**) &d_prod_copy,
+                         patchSize * patchSize * sizeof(*d_prod_copy)));
+
+    cudaCheck(cudaMemcpy(d_prod_copy, d_prod.data().get(),
+                         patchSize * patchSize * sizeof(*d_prod_copy),
+                         cudaMemcpyHostToDevice));
+
+    return CUDAPCAData(1, patchSize, patchSize, d_prod_copy);
 #endif
 
     // Clean and return
