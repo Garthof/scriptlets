@@ -238,10 +238,10 @@ CUDAPCA::generateEigenvecs(const CUDAPCA::CUDAPCAPatches &d_patches)
     // I do not need transpose the matrix.
     const int patchDiam = (2 * d_patches.patchRadius + 1);
     const int patchSize = patchDiam * patchDiam * patchDiam;
-    const data_t alpha = 1;
-    const data_t beta = 0;
+    data_t alpha = 1;
+    data_t beta = 0;
 
-    thrust::device_vector<data_t> d_mean(patchSize);
+    thrust::device_vector<data_t> d_sum(patchSize);
 
 #ifdef CUDAPCA_USE_FLOAT
 #define cublasXgemv cublasSgemv
@@ -255,11 +255,41 @@ CUDAPCA::generateEigenvecs(const CUDAPCA::CUDAPCAPatches &d_patches)
                             d_patches.data, patchSize,
                             d_ones.data().get(), 1,
                             &beta,
-                            d_mean.data().get(), 1));
+                            d_sum.data().get(), 1));
 
-#define TEST_EIGEN_SUM
+//#define TEST_EIGEN_SUM
 #ifdef TEST_EIGEN_SUM
     // Get values of sum and return them
+    data_t *d_sum_copy;
+
+    cudaCheck(cudaMalloc((void**) &d_sum_copy,
+                         patchSize * sizeof(*d_sum_copy)));
+
+    cudaCheck(cudaMemcpy(d_sum_copy, d_sum.data().get(),
+                         patchSize * sizeof(*d_sum_copy),
+                         cudaMemcpyHostToDevice));
+
+    return CUDAPCAData(1, 1, patchSize, d_sum_copy);
+#endif
+
+    // Divide the sum vector between the number of samples to
+    // get the mean patch
+    thrust::device_vector<data_t> d_mean(patchSize, 0.f);
+    alpha = 1.f/dataSize;
+
+#ifdef CUDAPCA_USE_FLOAT
+#define cublasXaxpy cublasSaxpy
+#else
+#define cublasXaxpy cublasDaxpy
+#endif
+
+    cublasCheck(cublasXaxpy(handle, patchSize, &alpha,
+                            d_sum.data().get(), 1,
+                            d_mean.data().get(), 1));
+
+#define TEST_EIGEN_MEAN
+#ifdef TEST_EIGEN_MEAN
+    // Get values of mean and return them
     data_t *d_mean_copy;
 
     cudaCheck(cudaMalloc((void**) &d_mean_copy,
