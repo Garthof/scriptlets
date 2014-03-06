@@ -3,15 +3,31 @@
 #include <cstdio>
 #include <cstdlib>
 
+#include "cublas_v2.h"
+
+#include <thrust/device_vector.h>
+
 // Auxiliary functions
 
-inline void
-cudaCheck(const cudaError_t stat) {
-    if (stat != cudaSuccess) {
-        fprintf(stderr, "Error %s at line %d in file %s\n",
-                cudaGetErrorString(stat), __LINE__, __FILE__);
-        exit(EXIT_FAILURE);
-    }
+#define cudaCheck(call)                                                        \
+{                                                                              \
+    const cudaError_t stat = call;                                             \
+    if (call != cudaSuccess) {                                                 \
+        fprintf(stderr, "Error %s at line %d in file %s\n",                    \
+                cudaGetErrorString(stat), __LINE__, __FILE__);                 \
+        exit(EXIT_FAILURE);                                                    \
+    }                                                                          \
+}
+
+
+#define cublasCheck(call)                                                      \
+{                                                                              \
+    const cublasStatus_t stat = call;                                          \
+    if (stat != CUBLAS_STATUS_SUCCESS) {                                       \
+        fprintf(stderr, "CUBLAS error %d at line %d in file %s\n",             \
+                stat, __LINE__, __FILE__);                                     \
+        exit(EXIT_FAILURE);                                                    \
+    }                                                                          \
 }
 
 
