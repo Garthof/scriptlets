@@ -7,9 +7,13 @@
 
 namespace CUDAPCA {
 
-    /// Basic data type.
+#define CUDAPCA_USE_FLOAT
+
+#ifdef CUDAPCA_USE_FLOAT
     typedef float data_t;
-    //typedef double data_t;
+#else
+    typedef double data_t;
+#endif
 
     /// Class to store PCA data contents in GPU memory.
     class CUDAPCAData {
