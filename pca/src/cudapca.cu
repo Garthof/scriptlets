@@ -310,7 +310,14 @@ CUDAPCA::generateEigenvecs(const CUDAPCA::CUDAPCAPatches &d_patches)
     alpha = 1.f;
     beta = 0.f;
 
-    cublasCheck(cublasSgemm(handle, CUBLAS_OP_N, CUBLAS_OP_T,
+
+#ifdef CUDAPCA_USE_FLOAT
+#define cublasXgemm cublasSgemm
+#else
+#define cublasXgemm cublasDgemm
+#endif
+
+    cublasCheck(cublasXgemm(handle, CUBLAS_OP_N, CUBLAS_OP_T,
                             patchSize, patchSize, dataSize,
                             &alpha,
                             d_patches.data, patchSize,
