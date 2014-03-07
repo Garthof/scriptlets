@@ -274,17 +274,16 @@ CUDAPCA::generateEigenvecs(const CUDAPCA::CUDAPCAPatches &d_patches)
 
     // Divide the sum vector between the number of samples to
     // get the mean patch
-    thrust::device_vector<data_t> d_mean(patchSize, 0.f);
+    thrust::device_vector<data_t> d_mean(d_sum);
     alpha = 1.f/dataSize;
 
 #ifdef CUDAPCA_USE_FLOAT
-#define cublasXaxpy cublasSaxpy
+#define cublasXscal cublasSscal
 #else
-#define cublasXaxpy cublasDaxpy
+#define cublasXscal cublasDscal
 #endif
 
-    cublasCheck(cublasXaxpy(handle, patchSize, &alpha,
-                            d_sum.data().get(), 1,
+    cublasCheck(cublasXscal(handle, patchSize, &alpha,
                             d_mean.data().get(), 1));
 
 //#define TEST_EIGEN_MEAN
