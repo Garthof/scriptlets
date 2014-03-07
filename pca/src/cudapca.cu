@@ -9,6 +9,21 @@
 
 // Auxiliary functions
 
+#ifdef CUDAPCA_USE_FLOAT
+#define cublasXaxpy cublasSaxpy
+#define cublasXgemm cublasSgemm
+#define cublasXgemv cublasSgemv
+#define cublasXger cublasSger
+#define cublasXscal cublasSscal
+#else
+#define cublasXaxpy cublasDaxpy
+#define cublasXgemm cublasDgemm
+#define cublasXgemv cublasDgemv
+#define cublasXger cublasDger
+#define cublasXscal cublasDscal
+#endif
+
+
 #define cudaCheck(call)                                                        \
 {                                                                              \
     const cudaError_t stat = call;                                             \
@@ -243,12 +258,6 @@ CUDAPCA::generateEigenvecs(const CUDAPCA::CUDAPCAPatches &d_patches)
 
     thrust::device_vector<data_t> d_sum(patchSize);
 
-#ifdef CUDAPCA_USE_FLOAT
-#define cublasXgemv cublasSgemv
-#else
-#define cublasXgemv cublasDgemv
-#endif
-
     cublasCheck(cublasXgemv(handle, CUBLAS_OP_N,
                             patchSize, dataSize,
                             &alpha,
@@ -275,13 +284,7 @@ CUDAPCA::generateEigenvecs(const CUDAPCA::CUDAPCAPatches &d_patches)
     // Divide the sum vector between the number of samples to
     // get the mean patch
     thrust::device_vector<data_t> d_mean(d_sum);
-    alpha = 1.f/dataSize;
-
-#ifdef CUDAPCA_USE_FLOAT
-#define cublasXscal cublasSscal
-#else
-#define cublasXscal cublasDscal
-#endif
+    alpha = 1.f / dataSize;
 
     cublasCheck(cublasXscal(handle, patchSize, &alpha,
                             d_mean.data().get(), 1));
@@ -310,13 +313,6 @@ CUDAPCA::generateEigenvecs(const CUDAPCA::CUDAPCAPatches &d_patches)
     alpha = 1.f;
     beta = 0.f;
 
-
-#ifdef CUDAPCA_USE_FLOAT
-#define cublasXgemm cublasSgemm
-#else
-#define cublasXgemm cublasDgemm
-#endif
-
     cublasCheck(cublasXgemm(handle, CUBLAS_OP_N, CUBLAS_OP_T,
                             patchSize, patchSize, dataSize,
                             &alpha,
@@ -340,20 +336,17 @@ CUDAPCA::generateEigenvecs(const CUDAPCA::CUDAPCAPatches &d_patches)
     return CUDAPCAData(1, patchSize, patchSize, d_prod_copy);
 #endif
 
-    // Compute the mean product matrix, i.e., the matrix resulting of
-    // multiplying the mean patch by itself. This is a symmetric matrix
-    // (its transpose is the same) so the major order used by CUBLAS
-    // does not matter. I use the CUBLAS ger function instead of the
-    // spr one because the latter returns a packed matrix, and I want
-    // a full-fledged one.
+    // Compute the covariance matrix. This is done in several steps.
+    // 1.   Compute the mean-patch product matrix, i.e., the matrix
+    //      resulting of multiplying the mean patch by itself. This
+    //      is a symmetric matrix (its transpose is the same) so the
+    //      major order used by CUBLAS does not matter. I use the CUBLAS
+    //      ger function instead of the spr one because the latter returns
+    //      a packed matrix, and I want a full-fledged one. This mean
+    //      product is divided by the number of occurrences (the number
+    //      of elements in the volume).
     thrust::device_vector<data_t> d_meanprod(patchSize * patchSize, 0.f);
-    alpha = 1.f;
-
-#ifdef CUDAPCA_USE_FLOAT
-#define cublasXger cublasSger
-#else
-#define cublasXger cublasDger
-#endif
+    alpha = 1.f / dataSize;
 
     cublasCheck(cublasXger(handle, patchSize, patchSize,
                            &alpha,
@@ -361,7 +354,7 @@ CUDAPCA::generateEigenvecs(const CUDAPCA::CUDAPCAPatches &d_patches)
                            d_mean.data().get(), 1,
                            d_meanprod.data().get(), patchSize));
 
-#define TEST_EIGEN_MEANPROD
+//#define TEST_EIGEN_MEANPROD
 #ifdef TEST_EIGEN_MEANPROD
     // Get values of mean product and return them
     data_t *d_meanprod_copy;
@@ -374,6 +367,36 @@ CUDAPCA::generateEigenvecs(const CUDAPCA::CUDAPCAPatches &d_patches)
                          cudaMemcpyHostToDevice));
 
     return CUDAPCAData(1, patchSize, patchSize, d_meanprod_copy);
+#endif
+
+    // 2.   Withdraw the mean product matrix from the patch product
+    //      matrix.
+    thrust::device_vector<data_t> d_cov(d_prod);
+    alpha = -1.f;
+
+    cublasCheck(cublasXaxpy(handle, patchSize * patchSize, &alpha,
+                            d_meanprod.data().get(), 1,
+                            d_cov.data().get(), 1));
+
+    // 3.   Normalize the result.
+    alpha = 1.f / dataSize;
+
+    cublasCheck(cublasXscal(handle, patchSize * patchSize, &alpha,
+                            d_cov.data().get(), 1));
+
+#define TEST_EIGEN_COV
+#ifdef TEST_EIGEN_COV
+    // Get values of covariance and return them
+    data_t *d_cov_copy;
+
+    cudaCheck(cudaMalloc((void**) &d_cov_copy,
+            patchSize * patchSize * sizeof(*d_cov_copy)));
+
+    cudaCheck(cudaMemcpy(d_cov_copy, d_cov.data().get(),
+            patchSize * patchSize * sizeof(*d_cov_copy),
+            cudaMemcpyHostToDevice));
+
+    return CUDAPCAData(1, patchSize, patchSize, d_cov_copy);
 #endif
 
     // Clean and return
