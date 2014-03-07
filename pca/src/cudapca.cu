@@ -11,12 +11,14 @@
 
 #ifdef CUDAPCA_USE_FLOAT
 #define cublasXaxpy cublasSaxpy
+#define cublasXdot cublasSdot
 #define cublasXgemm cublasSgemm
 #define cublasXgemv cublasSgemv
 #define cublasXger cublasSger
 #define cublasXscal cublasSscal
 #else
 #define cublasXaxpy cublasDaxpy
+#define cublasXdot cublasDdot
 #define cublasXgemm cublasDgemm
 #define cublasXgemv cublasDgemv
 #define cublasXger cublasDger
@@ -384,7 +386,7 @@ CUDAPCA::generateEigenvecs(const CUDAPCA::CUDAPCAPatches &d_patches)
     cublasCheck(cublasXscal(handle, patchSize * patchSize, &alpha,
                             d_cov.data().get(), 1));
 
-#define TEST_EIGEN_COV
+//#define TEST_EIGEN_COV
 #ifdef TEST_EIGEN_COV
     // Get values of covariance and return them
     data_t *d_cov_copy;
@@ -397,6 +399,52 @@ CUDAPCA::generateEigenvecs(const CUDAPCA::CUDAPCAPatches &d_patches)
             cudaMemcpyHostToDevice));
 
     return CUDAPCAData(1, patchSize, patchSize, d_cov_copy);
+#endif
+
+    // Compute eigenvectors from the covariance matrix. The approach used
+    // here is an iterative one. It is based on the code of Adams et al.
+    // "Gaussian KD-Trees for Fast High-Dimensional Filtering" (2009).
+    // Consider each row in the covariance matrix a first approximation
+    // of each eigenvector. The code proceeds iteratively in several steps.
+    thrust::device_vector<data_t> d_eigenvecs(d_cov);
+
+    while(true) {
+        // 1. Find an orthogonal base for the current eigenvectors
+        for (int i = 0; i < patchSize; i++) {
+            // Make vector i independent of all previous ones
+            for (int j = 0; j < i; j++) {
+                data_t dot = 0.f;
+
+                // Compute dot = v_i * v_j, where * is the dot product
+                cublasCheck(cublasXdot(handle, patchSize,
+                                       d_eigenvecs.data().get() + i*patchSize, 1,
+                                       d_eigenvecs.data().get() + j*patchSize, 1,
+                                       &dot));
+
+                // Compute v_i = -dot * v_j + v_i
+                dot = -dot;
+                cublasCheck(cublasXaxpy(handle, patchSize, &dot,
+                                        d_eigenvecs.data().get() + j*patchSize, 1,
+                                        d_eigenvecs.data().get() + i*patchSize, 1));
+            }
+        }
+
+        break;      // Test
+    }
+
+#define TEST_EIGEN_COMP
+#ifdef TEST_EIGEN_COMP
+    // Get values of eigenvectors and return them
+    data_t *d_eigenvecs_copy;
+
+    cudaCheck(cudaMalloc((void**) &d_eigenvecs_copy,
+            patchSize * patchSize * sizeof(*d_eigenvecs_copy)));
+
+    cudaCheck(cudaMemcpy(d_eigenvecs_copy, d_eigenvecs.data().get(),
+            patchSize * patchSize * sizeof(*d_eigenvecs_copy),
+            cudaMemcpyHostToDevice));
+
+    return CUDAPCAData(1, patchSize, patchSize, d_eigenvecs_copy);
 #endif
 
     // Clean and return
