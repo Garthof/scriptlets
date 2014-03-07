@@ -325,7 +325,7 @@ CUDAPCA::generateEigenvecs(const CUDAPCA::CUDAPCAPatches &d_patches)
                             &beta,
                             d_prod.data().get(), patchSize));
 
-#define TEST_EIGEN_PROD
+//#define TEST_EIGEN_PROD
 #ifdef TEST_EIGEN_PROD
     // Get values of product and return them
     data_t *d_prod_copy;
@@ -338,6 +338,42 @@ CUDAPCA::generateEigenvecs(const CUDAPCA::CUDAPCAPatches &d_patches)
                          cudaMemcpyHostToDevice));
 
     return CUDAPCAData(1, patchSize, patchSize, d_prod_copy);
+#endif
+
+    // Compute the mean product matrix, i.e., the matrix resulting of
+    // multiplying the mean patch by itself. This is a symmetric matrix
+    // (its transpose is the same) so the major order used by CUBLAS
+    // does not matter. I use the CUBLAS ger function instead of the
+    // spr one because the latter returns a packed matrix, and I want
+    // a full-fledged one.
+    thrust::device_vector<data_t> d_meanprod(patchSize * patchSize, 0.f);
+    alpha = 1.f;
+
+#ifdef CUDAPCA_USE_FLOAT
+#define cublasXger cublasSger
+#else
+#define cublasXger cublasDger
+#endif
+
+    cublasCheck(cublasXger(handle, patchSize, patchSize,
+                           &alpha,
+                           d_mean.data().get(), 1,
+                           d_mean.data().get(), 1,
+                           d_meanprod.data().get(), patchSize));
+
+#define TEST_EIGEN_MEANPROD
+#ifdef TEST_EIGEN_MEANPROD
+    // Get values of mean product and return them
+    data_t *d_meanprod_copy;
+
+    cudaCheck(cudaMalloc((void**) &d_meanprod_copy,
+                         patchSize * patchSize * sizeof(*d_meanprod_copy)));
+
+    cudaCheck(cudaMemcpy(d_meanprod_copy, d_meanprod.data().get(),
+                         patchSize * patchSize * sizeof(*d_meanprod_copy),
+                         cudaMemcpyHostToDevice));
+
+    return CUDAPCAData(1, patchSize, patchSize, d_meanprod_copy);
 #endif
 
     // Clean and return
