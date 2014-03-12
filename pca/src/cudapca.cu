@@ -12,16 +12,20 @@
 #ifdef CUDAPCA_USE_FLOAT
 #define cublasXaxpy cublasSaxpy
 #define cublasXdot cublasSdot
+#define cublasXgeam cublasSgeam
 #define cublasXgemm cublasSgemm
 #define cublasXgemv cublasSgemv
 #define cublasXger cublasSger
+#define cublasXnrm2 cublasSnrm2
 #define cublasXscal cublasSscal
 #else
 #define cublasXaxpy cublasDaxpy
 #define cublasXdot cublasDdot
+#define cublasXgeam cublasDgeam
 #define cublasXgemm cublasDgemm
 #define cublasXgemv cublasDgemv
 #define cublasXger cublasDger
+#define cublasXnrm2 cublasDnrm2
 #define cublasXscal cublasDscal
 #endif
 
@@ -407,15 +411,15 @@ CUDAPCA::generateEigenvecs(const CUDAPCA::CUDAPCAPatches &d_patches)
     // Consider each row in the covariance matrix a first approximation
     // of each eigenvector. The code proceeds iteratively in several steps.
     thrust::device_vector<data_t> d_eigenvecs(d_cov);
+    thrust::device_vector<data_t> d_eigenvecs_old(patchSize * patchSize, 0.f);
 
     while(true) {
         // 1. Find an orthogonal base for the current eigenvectors
         for (int i = 0; i < patchSize; i++) {
             // Make vector i independent of all previous ones
             for (int j = 0; j < i; j++) {
-                data_t dot = 0.f;
-
                 // Compute dot = v_i * v_j, where * is the dot product
+                data_t dot = 0.f;
                 cublasCheck(cublasXdot(handle, patchSize,
                                        d_eigenvecs.data().get() + i*patchSize, 1,
                                        d_eigenvecs.data().get() + j*patchSize, 1,
@@ -427,9 +431,66 @@ CUDAPCA::generateEigenvecs(const CUDAPCA::CUDAPCAPatches &d_patches)
                                         d_eigenvecs.data().get() + j*patchSize, 1,
                                         d_eigenvecs.data().get() + i*patchSize, 1));
             }
+
+            // Normalize vector
+            // Compute norm = norm(v_i)
+            data_t norm = 0.f;
+            cublasCheck(cublasXnrm2(handle, patchSize,
+                                    d_eigenvecs.data().get() + i*patchSize, 1,
+                                    &norm));
+
+
+            // Compute v_i = v_i / norm
+            norm = 1.f / norm;
+
+            cublasCheck(cublasXscal(handle, patchSize, &norm,
+                                    d_eigenvecs.data().get() + i*patchSize, 1))
         }
 
-        break;      // Test
+        /// TODO Test if previous step works
+        // 2. Check convergence
+        // Compute d_diff = d_eigen - d_old
+        thrust::device_vector<data_t> d_diff(patchSize * patchSize);
+
+        alpha = 1.0f;
+        beta = -1.0f;
+        cublasCheck(cublasXgeam(handle, CUBLAS_OP_N, CUBLAS_OP_N,
+                                patchSize, patchSize,
+                                &alpha,
+                                d_eigenvecs.data().get(), patchSize,
+                                &beta,
+                                d_eigenvecs_old.data().get(), patchSize,
+                                d_diff.data().get(), patchSize));
+
+        // Accumulate norm of the difference vectors
+        data_t dist = 0.f;
+        for (int i = 0; i < patchSize; i++) {
+            data_t norm = 0.f;
+            cublasCheck(cublasXnrm2(handle, patchSize,
+                                    d_diff.data().get() + i*patchSize, 1,
+                                    &norm));
+
+            dist += norm;
+        }
+
+        // Break loop if solution has converged
+        printf("dist=%12.6f\n", dist);
+        if (dist < 0.001f) break;
+
+        // Solution has not converged, so we keep iterating. Multiply
+        // the covariance matrix by current eigenvectors.
+        alpha = 1.f;
+        beta = 1.f;
+        cublasCheck(cublasXgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N,
+                                patchSize, patchSize, patchSize,
+                                &alpha,
+                                d_cov.data().get(), patchSize,
+                                d_eigenvecs.data().get(), patchSize,
+                                &beta,
+                                d_eigenvecs_old.data().get(), patchSize));
+
+        // Swap old and current eigenvectors
+        d_eigenvecs_old.swap(d_eigenvecs);
     }
 
 #define TEST_EIGEN_COMP
