@@ -247,22 +247,28 @@ CUDAPCA::generateEigenvecs(const CUDAPCA::CUDAPCAPatches &d_patches)
     cublasHandle_t handle;
     cublasCheck(cublasCreate(&handle));
 
-    // Compute main of all patches.
-    // Generate device vector with ones.
+    // Each patch is considered as a sample of as many random variables as
+    // the patch size. Each patch is stored as a row of the d_patches matrix,
+    // and each column corresponds to a distinct random variable.
     const int dataSize = d_patches.depth * d_patches.height * d_patches.width;
-    const thrust::device_vector<data_t> d_ones(dataSize, 1.f);
-
-    // Multiply patch space by device vector in order to sum all the
-    // patches in a component-wise function. CUBLAS gemv function
-    // computes y = aAx + by, and expects the matrix A to be in
-    // column-major format. As currently each row is a single patch,
-    // I do not need transpose the matrix.
     const int patchDiam = (2 * d_patches.patchRadius + 1);
     const int patchSize = patchDiam * patchDiam * patchDiam;
-    data_t alpha = 1;
-    data_t beta = 0;
 
-    thrust::device_vector<data_t> d_sum(patchSize);
+    // Compute the mean patch, in several steps:
+    //
+    // 1.   Multiply the columns of patch matrix space by the one-vector.
+    //      For each column/random variable, the sum of the samples is
+    //      obtained.
+    const thrust::device_vector<data_t> d_ones(dataSize, 1.f);
+    data_t alpha = 1.f;
+    data_t beta = 0.f;
+
+
+    // Note: BLAS gemv function computes y = aAx + by. All BLAS functions
+    // expect matrices to be stored in column-major format (a la Fortran).
+    // A rows correspond to single patches, I do not need transpose the
+    // matrix.
+    thrust::device_vector<data_t> d_sum(patchSize, 0.f);
 
     cublasCheck(cublasXgemv(handle, CUBLAS_OP_N,
                             patchSize, dataSize,
@@ -287,8 +293,8 @@ CUDAPCA::generateEigenvecs(const CUDAPCA::CUDAPCAPatches &d_patches)
     return CUDAPCAData(1, 1, patchSize, d_sum_copy);
 #endif
 
-    // Divide the sum vector between the number of samples to
-    // get the mean patch
+    // 2.   Divide the sum vector between the number of samples to
+    //      get the mean patch. BLAS scal function computes x = ax.
     thrust::device_vector<data_t> d_mean(d_sum);
     alpha = 1.f / dataSize;
 
@@ -310,12 +316,48 @@ CUDAPCA::generateEigenvecs(const CUDAPCA::CUDAPCAPatches &d_patches)
     return CUDAPCAData(1, 1, patchSize, d_mean_copy);
 #endif
 
-    // Compute the product of all patches with its transpose. This
-    // is equivalent a computing the product of all random variables
-    // (each patch is a sample of patchSize random variables). The
-    // resulting matrix contains in cell (i,j) the sum of the products
-    // of the elements i and j of all patches.
-    thrust::device_vector<data_t> d_prod(patchSize * patchSize);
+    // Compute all possible binary products between the means of all the
+    // random variables (i.e., 2^(patch size) possible products, ignoring
+    // the commutative property). The resulting matrix contains in each
+    // cell (i, j) the value E(Xi) * E(Xj). The BLAS function ger computes
+    // A = axx^T + A. I use this function instead of spr because the
+    // latter returns a packed matrix, and I want a full-fledged one.
+    thrust::device_vector<data_t> d_prodmean(patchSize * patchSize, 0.f);
+    alpha = 1.f;
+
+    cublasCheck(cublasXger(handle, patchSize, patchSize,
+                           &alpha,
+                           d_mean.data().get(), 1,
+                           d_mean.data().get(), 1,
+                           d_prodmean.data().get(), patchSize));
+
+//#define TEST_EIGEN_PRODMEAN
+#ifdef TEST_EIGEN_PRODMEAN
+    // Get values of mean product and return them
+    data_t *d_prodmean_copy;
+
+    cudaCheck(cudaMalloc((void**) &d_prodmean_copy,
+                         patchSize * patchSize * sizeof(*d_prodmean_copy)));
+
+    cudaCheck(cudaMemcpy(d_prodmean_copy, d_prodmean.data().get(),
+                         patchSize * patchSize * sizeof(*d_prodmean_copy),
+                         cudaMemcpyHostToDevice));
+
+    return CUDAPCAData(1, patchSize, patchSize, d_prodmean_copy);
+#endif
+
+    // Compute the mean of all possible binary products of all the random
+    // products (i.e., 2^(patch size) possible products, ignoring the
+    // commutative property). The resulting matrix should contain in each
+    // cell (i, j) the value E(Xi * Xj). This is done in several steps:
+    //
+    // 1.   Compute a matrix where each cell (i,j) is the sum of the
+    //      products of the elements i and j of all patches. The resulting
+    //      matrix contains in each cell (i, j) the value of sum(Xi * Xj).
+    //      This is accomplished by multiplying the transposed patch
+    //      matrix by itself (or the other way round in column-major
+    //      format). BLAS gemm function computes C = aAB + bC.
+    thrust::device_vector<data_t> d_sumprod(patchSize * patchSize);
     alpha = 1.f;
     beta = 0.f;
 
@@ -325,40 +367,30 @@ CUDAPCA::generateEigenvecs(const CUDAPCA::CUDAPCAPatches &d_patches)
                             d_patches.data, patchSize,
                             d_patches.data, patchSize,
                             &beta,
-                            d_prod.data().get(), patchSize));
+                            d_sumprod.data().get(), patchSize));
 
-//#define TEST_EIGEN_PROD
-#ifdef TEST_EIGEN_PROD
+//#define TEST_EIGEN_SUMPROD
+#ifdef TEST_EIGEN_SUMPROD
     // Get values of product and return them
-    data_t *d_prod_copy;
+    data_t *d_sumprod_copy;
 
-    cudaCheck(cudaMalloc((void**) &d_prod_copy,
-                         patchSize * patchSize * sizeof(*d_prod_copy)));
+    cudaCheck(cudaMalloc((void**) &d_sumprod_copy,
+                         patchSize * patchSize * sizeof(*d_sumprod_copy)));
 
-    cudaCheck(cudaMemcpy(d_prod_copy, d_prod.data().get(),
-                         patchSize * patchSize * sizeof(*d_prod_copy),
+    cudaCheck(cudaMemcpy(d_sumprod_copy, d_sumprod.data().get(),
+                         patchSize * patchSize * sizeof(*d_sumprod_copy),
                          cudaMemcpyHostToDevice));
 
-    return CUDAPCAData(1, patchSize, patchSize, d_prod_copy);
+    return CUDAPCAData(1, patchSize, patchSize, d_sumprod_copy);
 #endif
 
-    // Compute the covariance matrix. This is done in several steps.
-    // 1.   Compute the mean-patch product matrix, i.e., the matrix
-    //      resulting of multiplying the mean patch by itself. This
-    //      is a symmetric matrix (its transpose is the same) so the
-    //      major order used by CUBLAS does not matter. I use the CUBLAS
-    //      ger function instead of the spr one because the latter returns
-    //      a packed matrix, and I want a full-fledged one. This mean
-    //      product is divided by the number of occurrences (the number
-    //      of elements in the volume).
-    thrust::device_vector<data_t> d_meanprod(patchSize * patchSize, 0.f);
+    // 2.   Divide the sum vector between the number of samples to
+    //      get the mean of all products.
+    thrust::device_vector<data_t> d_meanprod(d_sumprod);
     alpha = 1.f / dataSize;
 
-    cublasCheck(cublasXger(handle, patchSize, patchSize,
-                           &alpha,
-                           d_mean.data().get(), 1,
-                           d_mean.data().get(), 1,
-                           d_meanprod.data().get(), patchSize));
+    cublasCheck(cublasXscal(handle, patchSize * patchSize, &alpha,
+                            d_meanprod.data().get(), 1));
 
 //#define TEST_EIGEN_MEANPROD
 #ifdef TEST_EIGEN_MEANPROD
@@ -375,19 +407,19 @@ CUDAPCA::generateEigenvecs(const CUDAPCA::CUDAPCAPatches &d_patches)
     return CUDAPCAData(1, patchSize, patchSize, d_meanprod_copy);
 #endif
 
-    // 2.   Withdraw the mean product matrix from the patch product
-    //      matrix.
-    thrust::device_vector<data_t> d_cov(d_prod);
+    // Compute the covariance matrix. This matrix contains all possible
+    // covariance values for all the random variables. That is, cell
+    // (i,j) contains the following value:
+    //
+    //              Cov(Xi, Xj) = E(Xi * Xj) - E(Xi) * E(Xj)
+    //
+    // This matrix is obtained from the results computed above. BLAS
+    // famous function axpy computes y = ax + y.
+    thrust::device_vector<data_t> d_cov(d_meanprod);
     alpha = -1.f;
 
     cublasCheck(cublasXaxpy(handle, patchSize * patchSize, &alpha,
-                            d_meanprod.data().get(), 1,
-                            d_cov.data().get(), 1));
-
-    // 3.   Normalize the result.
-    alpha = 1.f / dataSize;
-
-    cublasCheck(cublasXscal(handle, patchSize * patchSize, &alpha,
+                            d_prodmean.data().get(), 1,
                             d_cov.data().get(), 1));
 
 //#define TEST_EIGEN_COV
