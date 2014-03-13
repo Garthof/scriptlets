@@ -16,13 +16,14 @@ TmpFormat::TmpData::TmpData(
         const int _frames, const int _width,
         const int _height, const int _channels,
         const float *const _data)
-    : data(_data)
-    , frames(_frames)
+    : frames(_frames)
     , width(_width)
     , height(_height)
     , channels(_channels)
+    , data(new float[frames * width * height * channels])
 {
-
+    memcpy(const_cast<float *>(data), _data,
+           frames * width * height * channels * sizeof(*data));
 }
 
 
@@ -30,7 +31,6 @@ TmpFormat::TmpData::~TmpData()
 {
     delete[] data;
 }
-
 
 // TmpFormat functions
 

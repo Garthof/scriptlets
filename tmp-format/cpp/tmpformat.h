@@ -15,11 +15,11 @@ namespace TmpFormat {
         ~TmpData();
 
     public:
-        const float *const data;
         const int frames;
         const int width;
         const int height;
         const int channels;
+        const float *const data;
     };
 
     /// Load file contents and generates a TmpData. Notice that the number
