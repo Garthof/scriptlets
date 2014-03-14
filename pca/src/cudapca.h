@@ -3,7 +3,7 @@
 
 #include <cstdlib>
 
-#include <memory>
+#include <vector>
 
 namespace CUDAPCA {
 
@@ -62,10 +62,10 @@ namespace CUDAPCA {
     uploadData(const int depth,
                const int height,
                const int width,
-               const data_t *const h_data);
+               const std::vector<data_t> &h_data);
 
     /// Download data from GPU.
-    std::auto_ptr<data_t>
+    std::vector<data_t>
     downloadData(const CUDAPCAData &d_data);
 
     /// Generate patches for each data element.
@@ -74,7 +74,7 @@ namespace CUDAPCA {
                     const int patchRadius);
 
     /// Download patches from GPU.
-    std::auto_ptr<data_t>
+    std::vector<data_t>
     downloadPatches(const CUDAPCAPatches &d_patches);
 
     /// Compute eigenvectors from the patch space. Eigenvectors must be ordered

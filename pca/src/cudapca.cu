@@ -182,7 +182,7 @@ CUDAPCA::uploadData(
         const int depth,
         const int height,
         const int width,
-        const data_t *const h_data)
+        const std::vector<data_t> &h_data)
 {
     const int dataSize = depth * height * width;
     data_t *d_data;
@@ -191,7 +191,7 @@ CUDAPCA::uploadData(
     cudaCheck(cudaMalloc(reinterpret_cast<void**>(&d_data),
                          dataSize * sizeof(*d_data)));
 
-    cudaCheck(cudaMemcpy(d_data, h_data,
+    cudaCheck(cudaMemcpy(d_data, h_data.data(),
                          dataSize * sizeof(*d_data),
                          cudaMemcpyHostToDevice));
 
@@ -204,21 +204,18 @@ CUDAPCA::uploadData(
 }
 
 
-std::auto_ptr<CUDAPCA::data_t>
+std::vector<CUDAPCA::data_t>
 CUDAPCA::downloadData(const CUDAPCA::CUDAPCAData &d_data)
 {
     const int dataSize = d_data.depth * d_data.height * d_data.width;
-    data_t *h_data;
 
-    // Allocate space in host and copy data from GPU memory
-    cudaCheck(cudaMallocHost(reinterpret_cast<void**>(&h_data),
-                             dataSize * sizeof(*h_data)));
+    std::vector<data_t> h_data(dataSize);
 
-    cudaCheck(cudaMemcpy(h_data, d_data.data,
-                         dataSize * sizeof(*h_data),
+    cudaCheck(cudaMemcpy(h_data.data(), d_data.data,
+                         dataSize * sizeof(*d_data.data),
                          cudaMemcpyDeviceToHost));
 
-    return std::auto_ptr<data_t>(h_data);
+    return h_data;
 }
 
 
@@ -258,24 +255,21 @@ CUDAPCA::generatePatches(
 }
 
 
-std::auto_ptr<CUDAPCA::data_t>
+std::vector<CUDAPCA::data_t>
 CUDAPCA::downloadPatches(const CUDAPCA::CUDAPCAPatches &d_patches)
 {
     const int patchDiam = 2 * d_patches.patchRadius + 1;
     const int patchSize = patchDiam * patchDiam * patchDiam;
     const int patchesSize = d_patches.depth * d_patches.height
                             * d_patches.width * patchSize;
-    data_t *h_patches;
 
-    // Allocate space in host and copy data from GPU memory
-    cudaCheck(cudaMallocHost((void **) &h_patches,
-                             patchesSize * sizeof(*h_patches)));
+    std::vector<data_t> h_patches(patchesSize);
 
-    cudaCheck(cudaMemcpy(h_patches, d_patches.data,
-                         patchesSize * sizeof(*h_patches),
+    cudaCheck(cudaMemcpy(h_patches.data(), d_patches.data,
+                         patchesSize * sizeof(*d_patches.data),
                          cudaMemcpyDeviceToHost));
 
-    return std::auto_ptr<data_t>(h_patches);
+    return h_patches;
 }
 
 
