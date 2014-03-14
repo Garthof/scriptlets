@@ -327,7 +327,7 @@ CUDAPCA::generateEigenvecs(const CUDAPCA::CUDAPCAPatches &d_patches)
 
     cudaCheck(cudaMemcpy(d_sum_copy, d_sum.data().get(),
                          patchSize * sizeof(*d_sum_copy),
-                         cudaMemcpyHostToDevice));
+                         cudaMemcpyDeviceToDevice));
 
     return CUDAPCAData(1, 1, patchSize, d_sum_copy);
 #endif
@@ -350,7 +350,7 @@ CUDAPCA::generateEigenvecs(const CUDAPCA::CUDAPCAPatches &d_patches)
 
     cudaCheck(cudaMemcpy(d_mean_copy, d_mean.data().get(),
                          patchSize * sizeof(*d_mean_copy),
-                         cudaMemcpyHostToDevice));
+                         cudaMemcpyDeviceToDevice));
 
     return CUDAPCAData(1, 1, patchSize, d_mean_copy);
 #endif
@@ -380,7 +380,7 @@ CUDAPCA::generateEigenvecs(const CUDAPCA::CUDAPCAPatches &d_patches)
 
     cudaCheck(cudaMemcpy(d_prodmean_copy, d_prodmean.data().get(),
                          patchSize * patchSize * sizeof(*d_prodmean_copy),
-                         cudaMemcpyHostToDevice));
+                         cudaMemcpyDeviceToDevice));
 
     return CUDAPCAData(1, patchSize, patchSize, d_prodmean_copy);
 #endif
@@ -418,7 +418,7 @@ CUDAPCA::generateEigenvecs(const CUDAPCA::CUDAPCAPatches &d_patches)
 
     cudaCheck(cudaMemcpy(d_sumprod_copy, d_sumprod.data().get(),
                          patchSize * patchSize * sizeof(*d_sumprod_copy),
-                         cudaMemcpyHostToDevice));
+                         cudaMemcpyDeviceToDevice));
 
     return CUDAPCAData(1, patchSize, patchSize, d_sumprod_copy);
 #endif
@@ -441,7 +441,7 @@ CUDAPCA::generateEigenvecs(const CUDAPCA::CUDAPCAPatches &d_patches)
 
     cudaCheck(cudaMemcpy(d_meanprod_copy, d_meanprod.data().get(),
                          patchSize * patchSize * sizeof(*d_meanprod_copy),
-                         cudaMemcpyHostToDevice));
+                         cudaMemcpyDeviceToDevice));
 
     return CUDAPCAData(1, patchSize, patchSize, d_meanprod_copy);
 #endif
@@ -471,7 +471,7 @@ CUDAPCA::generateEigenvecs(const CUDAPCA::CUDAPCAPatches &d_patches)
 
     cudaCheck(cudaMemcpy(d_cov_copy, d_cov.data().get(),
             patchSize * patchSize * sizeof(*d_cov_copy),
-            cudaMemcpyHostToDevice));
+            cudaMemcpyDeviceToDevice));
 
     return CUDAPCAData(1, patchSize, patchSize, d_cov_copy);
 #endif
