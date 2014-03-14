@@ -1,5 +1,6 @@
 #include "cudapca.h"
 
+#include <cmath>
 #include <cstdio>
 #include <cstdlib>
 
@@ -112,20 +113,48 @@ CUDAPCA::CUDAPCAData::CUDAPCAData(
         const int _depth,
         const int _height,
         const int _width,
-        const CUDAPCA::data_t *const _data)
+        const data_t *const _data)
     : depth(_depth)
     , height(_height)
     , width(_width)
-    , data(_data)
+    , data(0)
 {
+    init(depth * height * width, _data);
+}
 
+
+CUDAPCA::CUDAPCAData::CUDAPCAData(
+        const int _depth,
+        const int _height,
+        const int _width,
+        const size_t dataSize,
+        const data_t *const _data)
+    : depth(_depth)
+    , height(_height)
+    , width(_width)
+    , data(0)
+{
+    init(dataSize, _data);
 }
 
 
 CUDAPCA::CUDAPCAData::~CUDAPCAData() {
-    printf("Releasing GPU memory...\n");
-    void *cData = const_cast<void *>(static_cast<const void *>(data));
-    cudaCheck(cudaFree(cData));
+    printf("Releasing GPU memory...");
+    cudaCheck(cudaFree(const_cast<data_t *>(data)));
+}
+
+
+void
+CUDAPCA::CUDAPCAData::init(
+        const size_t dataSize,
+        const data_t *const _data)
+{
+    cudaCheck(cudaMalloc(reinterpret_cast<void **>(const_cast<data_t **>(&data)),
+                         dataSize * sizeof(*data)));
+
+    cudaCheck(cudaMemcpy(const_cast<data_t *>(data), _data,
+                         dataSize * sizeof(*data),
+                         cudaMemcpyDeviceToDevice));
 }
 
 
@@ -135,8 +164,11 @@ CUDAPCA::CUDAPCAPatches::CUDAPCAPatches(
         const int _depth,
         const int _height,
         const int _width,
-        const int _patchRadius, const CUDAPCA::data_t *const _data)
-    : CUDAPCAData(_depth, _height, _width, _data)
+        const int _patchRadius,
+        const data_t *const _data)
+    : CUDAPCAData(_depth, _height, _width,
+                  _depth * _height * _width * std::pow(2*_patchRadius+1, 3),
+                  _data)
     , patchRadius(_patchRadius)
 {
 

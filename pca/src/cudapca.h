@@ -23,13 +23,25 @@ namespace CUDAPCA {
                     const int width,
                     const data_t *const data);
 
-        ~CUDAPCAData();
+    protected:
+        CUDAPCAData(const int depth,
+                    const int height,
+                    const int width,
+                    const size_t dataSize,
+                    const data_t *const data);
 
     public:
-        const data_t *const data;
+        ~CUDAPCAData();
+
+    private:
+        void
+        init(const size_t dataSize, const data_t *const data);
+
+    public:
         const int depth;
         const int height;
         const int width;
+        const data_t *const data;
     };
 
     /// Class to store PCA patches in GPU memory.
