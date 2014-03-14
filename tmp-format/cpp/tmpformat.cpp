@@ -102,18 +102,12 @@ parseData(const char *const rawData)
     const int width = headerData[h++];
     const int height = headerData[h++];
     const int channels = headerData[h++];
-    const size_t dataSize = frames * width * height * channels;
 
-    // Read the rest of the data and store it in a new buffer
+    // Read the rest of the data and store it in a new TmpData
     const float *const inputData =
             reinterpret_cast<const float *>(&headerData[h++]);
 
-    std::vector<float> outputData(dataSize);
-    memcpy(outputData.data(), inputData, dataSize * sizeof(*rawData));
-
-    // Generate new TmpData instance and return it
-    return TmpFormat::TmpData(frames, width, height, channels,
-                              outputData.data());
+    return TmpFormat::TmpData(frames, width, height, channels, inputData);
 }
 
 
