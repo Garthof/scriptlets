@@ -182,21 +182,24 @@ CUDAPCA::uploadData(
         const int depth,
         const int height,
         const int width,
-        const void *const h_data)
+        const data_t *const h_data)
 {
     const int dataSize = depth * height * width;
     data_t *d_data;
 
     // Allocate and copy data to GPU memory
-    cudaCheck(cudaMalloc((void**) &d_data,
+    cudaCheck(cudaMalloc(reinterpret_cast<void**>(&d_data),
                          dataSize * sizeof(*d_data)));
 
     cudaCheck(cudaMemcpy(d_data, h_data,
                          dataSize * sizeof(*d_data),
                          cudaMemcpyHostToDevice));
 
-    // Generate CUDAPCAData object and return
+    // Generate CUDAPCAData object, clean and return
     CUDAPCAData h_pcaData(depth, width, height, d_data);
+
+    cudaCheck(cudaFree(d_data));
+
     return h_pcaData;
 }
 
@@ -208,7 +211,7 @@ CUDAPCA::downloadData(const CUDAPCA::CUDAPCAData &d_data)
     data_t *h_data;
 
     // Allocate space in host and copy data from GPU memory
-    cudaCheck(cudaMallocHost((void **) &h_data,
+    cudaCheck(cudaMallocHost(reinterpret_cast<void**>(&h_data),
                              dataSize * sizeof(*h_data)));
 
     cudaCheck(cudaMemcpy(h_data, d_data.data,
@@ -245,9 +248,13 @@ CUDAPCA::generatePatches(
     cudaCheck(cudaThreadSynchronize());
     cudaCheck(cudaGetLastError());
 
-    return CUDAPCAPatches(
+    CUDAPCAPatches patches(
             d_data.depth, d_data.width, d_data.height,
             patchRadius, d_patchData);
+
+    cudaCheck(cudaFree(d_patchData));
+
+    return patches;
 }
 
 

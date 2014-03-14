@@ -62,7 +62,7 @@ namespace CUDAPCA {
     uploadData(const int depth,
                const int height,
                const int width,
-               const void *const h_data);
+               const data_t *const h_data);
 
     /// Download data from GPU.
     std::auto_ptr<data_t>
