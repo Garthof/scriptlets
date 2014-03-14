@@ -33,7 +33,7 @@
 #define cudaCheck(call)                                                        \
 {                                                                              \
     const cudaError_t stat = call;                                             \
-    if (call != cudaSuccess) {                                                 \
+    if (stat != cudaSuccess) {                                                 \
         fprintf(stderr, "Error %s at line %d in file %s\n",                    \
                 cudaGetErrorString(stat), __LINE__, __FILE__);                 \
         exit(EXIT_FAILURE);                                                    \
