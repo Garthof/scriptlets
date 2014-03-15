@@ -98,5 +98,17 @@ main(void) {
 
     TmpFormat::saveFile("t_eigenvecs.tmp", t_eigenvecs);
 
+    // Test projected patches
+    const CUDAPCA::CUDAPCAData d_projPatches =
+            CUDAPCA::projectPatches(d_patches, d_eigenvecs);
+
+    const std::vector<CUDAPCA::data_t> h_projPatches =
+            CUDAPCA::downloadData(d_projPatches);
+    const TmpFormat::TmpData t_projPatches =
+            getTmpFromData(d_projPatches.depth, d_projPatches.width,
+                           d_projPatches.height, 1, h_projPatches);
+
+    TmpFormat::saveFile("t_projPatches.tmp", t_projPatches);
+
     exit(EXIT_SUCCESS);
 }

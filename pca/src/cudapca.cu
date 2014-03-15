@@ -565,9 +565,9 @@ CUDAPCA::generateEigenvecs(
         // the covariance matrix by current eigenvectors
         cudaCheck(cudaMemset(d_eigenvecs_old.data().get(),
                              0, patchSize * patchSize * sizeof(data_t)));
-
         alpha = 1.f;
         beta = 1.f;
+
         cublasCheck(cublasXgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N,
                                 patchSize, patchSize, patchSize,
                                 &alpha,
@@ -583,4 +583,59 @@ CUDAPCA::generateEigenvecs(
     // Clean and return
     cublasCheck(cublasDestroy(handle));
     return CUDAPCAData(1, numPCADims, patchSize, d_eigenvecs.data().get());
+}
+
+
+CUDAPCA::CUDAPCAData
+CUDAPCA::projectPatches(
+        const CUDAPCAPatches &d_patches,
+        const CUDAPCAData &d_eigenvecs)
+{
+    // Create CUBLAS handle
+    cublasHandle_t handle;
+    cublasCheck(cublasCreate(&handle));
+
+    const int dataSize = d_patches.depth * d_patches.height * d_patches.width;
+    const int patchDiam = (2 * d_patches.patchRadius + 1);
+    const int patchSize = patchDiam * patchDiam * patchDiam;
+    const int numPCADims = d_eigenvecs.height;
+
+    // Multiply all patches by the current vectors. CUBLAS function gemm
+    // computes C = aAB + bC. Notice that patches and eigenvectors are
+    // stored in row-wise fashion. From CUBLAS point of view, this means
+    // that each column is a patch or an eigenvector, respectively. As
+    // matrix multiplication multiplies each row in A by each column B,
+    // the matrix with the patches must be transposed.
+    thrust::device_vector<data_t> d_projPatches(dataSize * numPCADims, 0.f);
+    data_t alpha = 1.f;
+    data_t beta = 1.f;
+
+    cublasCheck(cublasXgemm(handle, CUBLAS_OP_T, CUBLAS_OP_N,
+                            dataSize, numPCADims, patchSize,
+                            &alpha,
+                            d_patches.data, patchSize,
+                            d_eigenvecs.data, patchSize,
+                            &beta,
+                            d_projPatches.data().get(), dataSize));
+
+    // CUBLAS uses a column-major format. The resulting matrix from the
+    // previous operation needs to be transposed in order to get the matrix
+    // stored in a row-major format (a la C). CUBLAS function geam computes
+    // C = aA + bB, and B is ignored if b is zero.
+    thrust::device_vector<data_t> d_projPatchesTrans(dataSize * numPCADims);
+    alpha = 1.f;
+    beta = 0.f;
+
+    cublasCheck(cublasXgeam(handle, CUBLAS_OP_T, CUBLAS_OP_N,
+                            numPCADims, dataSize,
+                            &alpha,
+                            d_projPatches.data().get(), dataSize,
+                            &beta,
+                            d_projPatches.data().get(), dataSize,
+                            d_projPatchesTrans.data().get(), numPCADims));
+
+    // Clean and return
+    cublasCheck(cublasDestroy(handle));
+    return CUDAPCAData(1, dataSize, numPCADims,
+                       d_projPatchesTrans.data().get());
 }

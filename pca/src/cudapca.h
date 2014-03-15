@@ -16,6 +16,7 @@ namespace CUDAPCA {
 #endif
 
     /// Class to store PCA data contents in GPU memory.
+    /// TODO Add support to change data after construction
     class CUDAPCAData {
     public:
         CUDAPCAData(const int depth,
@@ -85,9 +86,8 @@ namespace CUDAPCA {
 
     /// Project patches into the first eigenvectors.
     CUDAPCAData
-    projectPatches(const CUDAPCAData &d_data,
-                   const CUDAPCAPatches &d_patches,
-                   const int numPCADims);
+    projectPatches(const CUDAPCAPatches &d_patches,
+                   const CUDAPCAData &d_eigenvecs);
 }
 
 #endif /* CUDAPCA_H_ */
