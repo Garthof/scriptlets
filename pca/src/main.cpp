@@ -7,7 +7,6 @@
 #include <tmpformat.h>
 
 #include "cudapca.h"
-#include "eigenvectors.h"
 
 const std::string FILE_PATH = "/home/bzflamas/scriptlets/pca/test3x3x3.tmp";
 const int PATCH_RADIUS = 2;
