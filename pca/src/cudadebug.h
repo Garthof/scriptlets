@@ -4,6 +4,8 @@
 #include <sstream>
 #include <string>
 
+#include <tmpformat.h>
+
 template <typename T>
 inline std::string
 toString(const T &t)
