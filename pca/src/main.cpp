@@ -7,6 +7,7 @@
 #include <tmpformat.h>
 
 #include "cudapca.h"
+#include "eigenvectors.h"
 
 const std::string FILE_PATH = "/home/bzflamas/scriptlets/pca/test3x3x3.tmp";
 const int PATCH_RADIUS = 2;
@@ -88,7 +89,7 @@ main(void) {
 
     // Test eigenvectors
     const CUDAPCA::CUDAPCAData d_eigenvecs =
-            CUDAPCA::generateEigenvecs(d_patches);
+            CUDAPCA::generateEigenvecs(d_patches, NUM_PCA_DIMS);
 
     const std::vector<CUDAPCA::data_t> h_eigenvecs =
             CUDAPCA::downloadData(d_eigenvecs);

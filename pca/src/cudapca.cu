@@ -8,6 +8,8 @@
 
 #include <thrust/device_vector.h>
 
+#include "cudadebug.h"
+
 // Auxiliary functions
 
 #ifdef CUDAPCA_USE_FLOAT
@@ -274,7 +276,9 @@ CUDAPCA::downloadPatches(const CUDAPCA::CUDAPCAPatches &d_patches)
 
 
 CUDAPCA::CUDAPCAData
-CUDAPCA::generateEigenvecs(const CUDAPCA::CUDAPCAPatches &d_patches)
+CUDAPCA::generateEigenvecs(
+        const CUDAPCA::CUDAPCAPatches &d_patches,
+        const int numPCADims)
 {
     // Create CUBLAS handle
     cublasHandle_t handle;
@@ -475,13 +479,31 @@ CUDAPCA::generateEigenvecs(const CUDAPCA::CUDAPCAPatches &d_patches)
     // "Gaussian KD-Trees for Fast High-Dimensional Filtering" (2009).
     // Consider each row in the covariance matrix a first approximation
     // of each eigenvector. The code proceeds iteratively in several steps.
+    // In each step, an orthonormal base is built from the previous
+    // result (initially, the covariance matrix). If the result does not
+    // converge, the covariance matrix is multiplied by this base, to
+    // generate the next result to be used in the next iteration.
+    //
+    // I must say that the method present severe numerically inestabilities,
+    // (and can result in computation of 1/0). This seems to be specially
+    // aggravated by either the fact that computations are done in the GPU
+    // or using CUBLAS (the CPU version seems to converge better, but it
+    // does not mean. If the number of output dimensions (numPCADims)
+    // is high, this method does not work. Using three or less dimensions
+    // seems to be ok.
     thrust::device_vector<data_t> d_eigenvecs(d_cov);
     thrust::device_vector<data_t> d_eigenvecs_old(patchSize * patchSize, 0.f);
 
+    saveGPUBuffer("d_eigenvecs_orig",
+                  1, patchSize, patchSize,
+                  d_eigenvecs);
+
     while(true) {
-        // 1. Find an orthogonal base for the current eigenvectors
-        for (int i = 0; i < patchSize; i++) {
-            // Make vector i independent of all previous ones
+        // 1.   Find an orthogonal base for the current eigenvectors. This
+        //      is achieved as a result of applying a Gram-Schmidt process
+        //      that orthonormalizes the eigenvectors.
+        for (int i = 0; i < numPCADims; i++) {
+            // Make vector v_i independent of all previous ones
             for (int j = 0; j < i; j++) {
                 // Compute dot = v_i * v_j, where * is the dot product
                 data_t dot = 0.f;
@@ -504,46 +526,46 @@ CUDAPCA::generateEigenvecs(const CUDAPCA::CUDAPCAPatches &d_patches)
                                     d_eigenvecs.data().get() + i*patchSize, 1,
                                     &norm));
 
-
-            // Compute v_i = v_i / norm
+            // Compute v_i = v_i / norm, and ensure the first component
+            // of each eigenvector is positive
             norm = 1.f / norm;
+            if (d_eigenvecs[i*patchSize] < 0) norm = -norm;
 
             cublasCheck(cublasXscal(handle, patchSize, &norm,
                                     d_eigenvecs.data().get() + i*patchSize, 1))
         }
 
-        /// TODO Test if previous step works
         // 2. Check convergence
         // Compute d_diff = d_eigen - d_old
-        thrust::device_vector<data_t> d_diff(patchSize * patchSize);
+        thrust::device_vector<data_t> d_diff(d_eigenvecs);
 
-        alpha = 1.0f;
-        beta = -1.0f;
-        cublasCheck(cublasXgeam(handle, CUBLAS_OP_N, CUBLAS_OP_N,
-                                patchSize, patchSize,
+        alpha = -1.0f;
+        cublasCheck(cublasXaxpy(handle, patchSize * patchSize,
                                 &alpha,
-                                d_eigenvecs.data().get(), patchSize,
-                                &beta,
-                                d_eigenvecs_old.data().get(), patchSize,
-                                d_diff.data().get(), patchSize));
+                                d_eigenvecs_old.data().get(), 1,
+                                d_diff.data().get(), 1));
 
-        // Accumulate norm of the difference vectors
+        // Accumulate squared norm of the difference vectors
         data_t dist = 0.f;
-        for (int i = 0; i < patchSize; i++) {
-            data_t norm = 0.f;
-            cublasCheck(cublasXnrm2(handle, patchSize,
-                                    d_diff.data().get() + i*patchSize, 1,
-                                    &norm));
+        for (int i = 0; i < numPCADims; i++) {
+            data_t dot = 0.f;
+            cublasCheck(cublasXdot(handle, patchSize,
+                                   d_diff.data().get() + i*patchSize, 1,
+                                   d_diff.data().get() + i*patchSize, 1,
+                                   &dot));
 
-            dist += norm;
+            dist += dot;
         }
 
         // Break loop if solution has converged
-        printf("dist=%12.6f\n", dist);
+        printf("Distance to convergence = %12.6f\n", dist);
         if (dist < 0.001f) break;
 
         // Solution has not converged, so we keep iterating. Multiply
-        // the covariance matrix by current eigenvectors.
+        // the covariance matrix by current eigenvectors
+        cudaCheck(cudaMemset(d_eigenvecs_old.data().get(),
+                             0, patchSize * patchSize * sizeof(data_t)));
+
         alpha = 1.f;
         beta = 1.f;
         cublasCheck(cublasXgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N,
@@ -558,22 +580,7 @@ CUDAPCA::generateEigenvecs(const CUDAPCA::CUDAPCAPatches &d_patches)
         d_eigenvecs_old.swap(d_eigenvecs);
     }
 
-#define TEST_EIGEN_COMP
-#ifdef TEST_EIGEN_COMP
-    // Get values of eigenvectors and return them
-    data_t *d_eigenvecs_copy;
-
-    cudaCheck(cudaMalloc((void**) &d_eigenvecs_copy,
-            patchSize * patchSize * sizeof(*d_eigenvecs_copy)));
-
-    cudaCheck(cudaMemcpy(d_eigenvecs_copy, d_eigenvecs.data().get(),
-            patchSize * patchSize * sizeof(*d_eigenvecs_copy),
-            cudaMemcpyHostToDevice));
-
-    return CUDAPCAData(1, patchSize, patchSize, d_eigenvecs_copy);
-#endif
-
     // Clean and return
     cublasCheck(cublasDestroy(handle));
-    return CUDAPCAData(0, 0, 0, 0);
+    return CUDAPCAData(1, numPCADims, patchSize, d_eigenvecs.data().get());
 }
