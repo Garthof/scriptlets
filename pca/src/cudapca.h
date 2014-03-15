@@ -27,7 +27,7 @@ namespace CUDAPCA {
         CUDAPCAData(const int depth,
                     const int height,
                     const int width,
-                    const size_t dataSize,
+                    const int dataSize,
                     const data_t *const data);
 
     public:
@@ -35,7 +35,7 @@ namespace CUDAPCA {
 
     private:
         void
-        init(const size_t dataSize, const data_t *const data);
+        init(const int dataSize, const data_t *const data);
 
     public:
         const int depth;

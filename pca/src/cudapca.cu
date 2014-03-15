@@ -127,7 +127,7 @@ CUDAPCA::CUDAPCAData::CUDAPCAData(
         const int _depth,
         const int _height,
         const int _width,
-        const size_t dataSize,
+        const int dataSize,
         const data_t *const _data)
     : depth(_depth)
     , height(_height)
@@ -146,7 +146,7 @@ CUDAPCA::CUDAPCAData::~CUDAPCAData() {
 
 void
 CUDAPCA::CUDAPCAData::init(
-        const size_t dataSize,
+        const int dataSize,
         const data_t *const _data)
 {
     cudaCheck(cudaMalloc(reinterpret_cast<void **>(const_cast<data_t **>(&data)),
