@@ -498,10 +498,6 @@ CUDAPCA::generateEigenvecs(
     thrust::device_vector<data_t> d_eigenvecs(d_cov);
     thrust::device_vector<data_t> d_eigenvecs_old(patchSize * patchSize, 0.f);
 
-    saveGPUBuffer("d_eigenvecs_orig",
-                  1, patchSize, patchSize,
-                  d_eigenvecs);
-
     while(true) {
         // 1.   Find an orthogonal base for the current eigenvectors. This
         //      is achieved as a result of applying a Gram-Schmidt process
@@ -609,37 +605,22 @@ CUDAPCA::projectPatches(
     // stored in row-wise fashion. From CUBLAS point of view, this means
     // that each column is a patch or an eigenvector, respectively. As
     // matrix multiplication multiplies each row in A by each column B,
-    // the matrix with the patches must be transposed.
+    // I multiply instead the transposed eigenvectors by the patches. The
+    // result is transposed to what should be expected (from CUBLAS point
+    // of view), but from C point of view is just as expected.
     thrust::device_vector<data_t> d_projPatches(dataSize * numPCADims, 0.f);
-    data_t alpha = 1.f;
-    data_t beta = 1.f;
+    const data_t alpha = 1.f;
+    const data_t beta = 1.f;
 
     cublasCheck(cublasXgemm(handle, CUBLAS_OP_T, CUBLAS_OP_N,
-                            dataSize, numPCADims, patchSize,
+                            numPCADims, dataSize, patchSize,
                             &alpha,
-                            d_patches.data(), patchSize,
                             d_eigenvecs.data(), patchSize,
+                            d_patches.data(), patchSize,
                             &beta,
-                            d_projPatches.data().get(), dataSize));
-
-    // CUBLAS uses a column-major format. The resulting matrix from the
-    // previous operation needs to be transposed in order to get the matrix
-    // stored in a row-major format (a la C). CUBLAS function geam computes
-    // C = aA + bB, and B is ignored if b is zero.
-    thrust::device_vector<data_t> d_projPatchesTrans(dataSize * numPCADims);
-    alpha = 1.f;
-    beta = 0.f;
-
-    cublasCheck(cublasXgeam(handle, CUBLAS_OP_T, CUBLAS_OP_N,
-                            numPCADims, dataSize,
-                            &alpha,
-                            d_projPatches.data().get(), dataSize,
-                            &beta,
-                            d_projPatches.data().get(), dataSize,
-                            d_projPatchesTrans.data().get(), numPCADims));
+                            d_projPatches.data().get(), numPCADims));
 
     // Clean and return
     cublasCheck(cublasDestroy(handle));
-    return CUDAPCAData(1, dataSize, numPCADims,
-                       d_projPatchesTrans.data().get());
+    return CUDAPCAData(1, dataSize, numPCADims, d_projPatches.data().get());
 }
