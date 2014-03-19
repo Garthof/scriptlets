@@ -16,8 +16,8 @@ namespace CUDAPCA {
 #endif
 
     /// Class to store PCA data contents in GPU memory.
-    /// TODO Add support to change data after construction
     class CUDAPCAData {
+    // Constructors and destructor
     public:
         CUDAPCAData(const int depth,
                     const int height,
@@ -34,15 +34,23 @@ namespace CUDAPCA {
     public:
         ~CUDAPCAData();
 
-    private:
-        void
-        init(const int dataSize, const data_t *const data);
+    // Function members
+    public:
+        inline const data_t*
+        data() const { return dataBuffer; }
 
+    private:
+        data_t *
+        initData(const int dataSize, const data_t *const data);
+
+    // Variable members
     public:
         const int depth;
         const int height;
         const int width;
-        const data_t *const data;
+
+    private:
+        data_t *const dataBuffer;
     };
 
     /// Class to store PCA patches in GPU memory.

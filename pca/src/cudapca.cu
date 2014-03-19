@@ -119,9 +119,9 @@ CUDAPCA::CUDAPCAData::CUDAPCAData(
     : depth(_depth)
     , height(_height)
     , width(_width)
-    , data(0)
+    , dataBuffer(initData(depth * height * width, _data))
 {
-    init(depth * height * width, _data);
+
 }
 
 
@@ -134,29 +134,33 @@ CUDAPCA::CUDAPCAData::CUDAPCAData(
     : depth(_depth)
     , height(_height)
     , width(_width)
-    , data(0)
+    , dataBuffer(initData(dataSize, _data))
 {
-    init(dataSize, _data);
+
 }
 
 
 CUDAPCA::CUDAPCAData::~CUDAPCAData() {
     printf("Releasing GPU memory...");
-    cudaCheck(cudaFree(const_cast<data_t *>(data)));
+    cudaCheck(cudaFree(dataBuffer));
 }
 
 
-void
-CUDAPCA::CUDAPCAData::init(
+CUDAPCA::data_t *
+CUDAPCA::CUDAPCAData::initData(
         const int dataSize,
         const data_t *const _data)
 {
-    cudaCheck(cudaMalloc(reinterpret_cast<void **>(const_cast<data_t **>(&data)),
-                         dataSize * sizeof(*data)));
+    data_t *dataBuffer;
 
-    cudaCheck(cudaMemcpy(const_cast<data_t *>(data), _data,
-                         dataSize * sizeof(*data),
+    cudaCheck(cudaMalloc(reinterpret_cast<void **>(&dataBuffer),
+                         dataSize * sizeof(*dataBuffer)));
+
+    cudaCheck(cudaMemcpy(dataBuffer, _data,
+                         dataSize * sizeof(*dataBuffer),
                          cudaMemcpyDeviceToDevice));
+
+    return dataBuffer;
 }
 
 
@@ -213,8 +217,8 @@ CUDAPCA::downloadData(const CUDAPCA::CUDAPCAData &d_data)
 
     std::vector<data_t> h_data(dataSize);
 
-    cudaCheck(cudaMemcpy(h_data.data(), d_data.data,
-                         dataSize * sizeof(*d_data.data),
+    cudaCheck(cudaMemcpy(h_data.data(), d_data.data(),
+                         dataSize * sizeof(*d_data.data()),
                          cudaMemcpyDeviceToHost));
 
     return h_data;
@@ -240,7 +244,7 @@ CUDAPCA::generatePatches(
     const dim3 dimGrd(ceilDiv(dataSize, dimBlk.x));
 
     kernGeneratePatches<<<dimGrd, dimBlk>>>(
-            d_patchData, d_data.data,
+            d_patchData, d_data.data(),
             d_data.depth, d_data.width, d_data.height,
             patchRadius);
 
@@ -267,8 +271,8 @@ CUDAPCA::downloadPatches(const CUDAPCA::CUDAPCAPatches &d_patches)
 
     std::vector<data_t> h_patches(patchesSize);
 
-    cudaCheck(cudaMemcpy(h_patches.data(), d_patches.data,
-                         patchesSize * sizeof(*d_patches.data),
+    cudaCheck(cudaMemcpy(h_patches.data(), d_patches.data(),
+                         patchesSize * sizeof(*d_patches.data()),
                          cudaMemcpyDeviceToHost));
 
     return h_patches;
@@ -310,7 +314,7 @@ CUDAPCA::generateEigenvecs(
     cublasCheck(cublasXgemv(handle, CUBLAS_OP_N,
                             patchSize, dataSize,
                             &alpha,
-                            d_patches.data, patchSize,
+                            d_patches.data(), patchSize,
                             d_ones.data().get(), 1,
                             &beta,
                             d_sum.data().get(), 1));
@@ -401,8 +405,8 @@ CUDAPCA::generateEigenvecs(
     cublasCheck(cublasXgemm(handle, CUBLAS_OP_N, CUBLAS_OP_T,
                             patchSize, patchSize, dataSize,
                             &alpha,
-                            d_patches.data, patchSize,
-                            d_patches.data, patchSize,
+                            d_patches.data(), patchSize,
+                            d_patches.data(), patchSize,
                             &beta,
                             d_sumprod.data().get(), patchSize));
 
@@ -613,8 +617,8 @@ CUDAPCA::projectPatches(
     cublasCheck(cublasXgemm(handle, CUBLAS_OP_T, CUBLAS_OP_N,
                             dataSize, numPCADims, patchSize,
                             &alpha,
-                            d_patches.data, patchSize,
-                            d_eigenvecs.data, patchSize,
+                            d_patches.data(), patchSize,
+                            d_eigenvecs.data(), patchSize,
                             &beta,
                             d_projPatches.data().get(), dataSize));
 
