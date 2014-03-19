@@ -12,7 +12,7 @@ namespace TmpFormat {
                 const int height, const int channels,
                 const float *const data);
 
-        ~TmpData();
+        virtual ~TmpData();
 
     public:
         const int frames;
