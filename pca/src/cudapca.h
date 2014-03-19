@@ -32,7 +32,7 @@ namespace CUDAPCA {
                     const data_t *const data);
 
     public:
-        ~CUDAPCAData();
+        virtual ~CUDAPCAData();
 
     // Function members
     public:
