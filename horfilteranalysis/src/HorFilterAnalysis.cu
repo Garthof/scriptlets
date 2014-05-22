@@ -48,18 +48,16 @@ kernFilterHorOperation(
 template<>
 __device__ __forceinline__ void
 kernFilterHorOperation(
-        float4 *const data,
+        float2 *const data,
         const int basePos0, const int basePos1,
         const int nn, const float a)
 {
-    const float4 valPos0 = data[basePos0];
-    const float4 valPos1 = data[basePos1];
-    float4 res = valPos0;
+    const float2 valPos0 = data[basePos0];
+    const float2 valPos1 = data[basePos1];
+    float2 res = valPos0;
 
     res.x += a * (valPos1.x - valPos0.x);
     res.y += a * (valPos1.y - valPos0.y);
-    res.z += a * (valPos1.z - valPos0.z);
-    res.w += a * (valPos1.w - valPos0.w);
 
     data[basePos0] = res;
 }
@@ -79,6 +77,26 @@ kernFilterHorOperation(
     res.x += a * (valPos1.x - valPos0.x);
     res.y += a * (valPos1.y - valPos0.y);
     res.z += a * (valPos1.z - valPos0.z);
+
+    data[basePos0] = res;
+}
+
+
+template<>
+__device__ __forceinline__ void
+kernFilterHorOperation(
+        float4 *const data,
+        const int basePos0, const int basePos1,
+        const int nn, const float a)
+{
+    const float4 valPos0 = data[basePos0];
+    const float4 valPos1 = data[basePos1];
+    float4 res = valPos0;
+
+    res.x += a * (valPos1.x - valPos0.x);
+    res.y += a * (valPos1.y - valPos0.y);
+    res.z += a * (valPos1.z - valPos0.z);
+    res.w += a * (valPos1.w - valPos0.w);
 
     data[basePos0] = res;
 }
@@ -171,7 +189,7 @@ int main(void) {
     const int depth = WORK_SIZE;
     const int height = WORK_SIZE;
     const int width = WORK_SIZE;
-    const int nn = 4;
+    const int nn = 2;
     const int dataSize = depth * height * width * nn;
 
     // Generate data in CPU
@@ -184,6 +202,19 @@ int main(void) {
     // Copy data into GPU
     std::vector<float> h_resData(dataSize);
     computeResult(&h_resData[0], &h_origData[0], depth, height, width, nn, a);
+
+    if (nn == 2)  {
+        const std::vector<float> h_origData2 = h_origData;
+        std::vector<float> h_resData2(dataSize);
+        computeResult((float2 *) &h_resData2[0], (float2 *) &h_origData2[0],
+                      depth, height, width, 1, a);
+
+        if (compareResults(h_resData, h_resData2)) {
+            std::cout << "Results are equal" << std::endl;
+        } else {
+            std::cerr << "Results are different" << std::endl;
+        }
+    }
 
     if (nn == 3)  {
         const std::vector<float> h_origData3 = h_origData;
