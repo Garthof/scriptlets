@@ -1,30 +1,6 @@
-#include <cassert>
-#include <cmath>
+#include "CUDAUtils.h"
+
 #include <cstdio>
-#include <cstdlib>
-
-#include <iostream>
-#include <vector>
-
-const int WORK_SIZE = 145;
-const int NUM_ITERS = 100;
-
-#define CUDA_CHECK_RETURN(value) {											\
-	cudaError_t _m_cudaStat = value;										\
-	if (_m_cudaStat != cudaSuccess) {										\
-		fprintf(stderr, "Error %s at line %d in file %s\n",					\
-				cudaGetErrorString(_m_cudaStat), __LINE__, __FILE__);		\
-		exit(1);															\
-	} }
-
-
-template <typename T>
-inline T
-ceil_div(const T &a, const T &b)
-{
-    return ((a + b - 1) / b);
-}
-
 
 template<typename T>
 __device__ __forceinline__ void
@@ -167,82 +143,4 @@ computeResult(
                                  cudaMemcpyDeviceToHost));
 
     CUDA_CHECK_RETURN(cudaFree(d_data));
-}
-
-
-bool
-compareResults(const std::vector<float> a, const std::vector<float> b)
-{
-    assert(a.size() == b.size());
-
-    for (int i = 0; i < a.size(); i++) {
-        if (std::abs(a[i] - b[i]) > 0.001f) return false;
-    }
-
-    return true;
-}
-
-
-int main(void) {
-    const float sigma = 0.5f;
-    const float a = std::exp(-std::sqrt(2.f) / sigma);
-    const int depth = WORK_SIZE;
-    const int height = WORK_SIZE;
-    const int width = WORK_SIZE;
-    const int nn = 2;
-    const int dataSize = depth * height * width * nn;
-
-    // Generate data in CPU
-    std::vector<float> h_origData(dataSize);
-    for (int i = 0; i < dataSize; i++) {
-        const float r = float(std::rand()) / float(RAND_MAX);
-        h_origData[i] = r - 0.5f;
-    }
-
-    // Copy data into GPU
-    std::vector<float> h_resData(dataSize);
-    computeResult(&h_resData[0], &h_origData[0], depth, height, width, nn, a);
-
-    if (nn == 2)  {
-        const std::vector<float> h_origData2 = h_origData;
-        std::vector<float> h_resData2(dataSize);
-        computeResult((float2 *) &h_resData2[0], (float2 *) &h_origData2[0],
-                      depth, height, width, 1, a);
-
-        if (compareResults(h_resData, h_resData2)) {
-            std::cout << "Results are equal" << std::endl;
-        } else {
-            std::cerr << "Results are different" << std::endl;
-        }
-    }
-
-    if (nn == 3)  {
-        const std::vector<float> h_origData3 = h_origData;
-        std::vector<float> h_resData3(dataSize);
-        computeResult((float3 *) &h_resData3[0], (float3 *) &h_origData3[0],
-                      depth, height, width, 1, a);
-
-        if (compareResults(h_resData, h_resData3)) {
-            std::cout << "Results are equal" << std::endl;
-        } else {
-            std::cerr << "Results are different" << std::endl;
-        }
-    }
-
-    if (nn == 4)  {
-        const std::vector<float> h_origData4 = h_origData;
-        std::vector<float> h_resData4(dataSize);
-        computeResult((float4 *) &h_resData4[0], (float4 *) &h_origData4[0],
-                      depth, height, width, 1, a);
-
-        if (compareResults(h_resData, h_resData4)) {
-            std::cout << "Results are equal" << std::endl;
-        } else {
-            std::cerr << "Results are different" << std::endl;
-        }
-    }
-
-    CUDA_CHECK_RETURN(cudaDeviceReset());
-
-    return 0;
 }
