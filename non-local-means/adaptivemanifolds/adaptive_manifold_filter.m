@@ -98,7 +98,7 @@ df = floor_to_power_of_two(df);
 df = max(1, df);
 
 [h_vol w_vol d_vol nn] = size(patch_space);
-rvol_size = round(size(in_volume) / df);
+rvol_size = round([size(in_volume, 1) size(in_volume, 2) size(in_volume, 3)] / df);
 
 downsample = @(x) patch_space_scale( ...
                         x, [rvol_size(1) rvol_size(2) rvol_size(3)], 'linear');
