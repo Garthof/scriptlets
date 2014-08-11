@@ -147,21 +147,21 @@ generate_supersets() {
 # Processes each image to generate the final collage
 process_results() {
     # Check orig_dir
-    if [ -z "$orig_dir" ]; do
+    if [ -z "$orig_dir" ]; then
         echo "Please specify a non-empty path to retrieve original results"
         exit
-    done
+    fi
 
     # Check proc_dir before removing any content
-    if [ -z "$proc_dir" ]; do
+    if [ -z "$proc_dir" ]; then
         echo "Please specify a non-empty path to store processed results"
         exit
-    done
+    fi
 
-    if [ "$proc_dir" == "$HOME" ]; do
+    if [ "$proc_dir" == "$HOME" ]; then
         echo "$HOME is not valid destination directory"
         exit
-    done
+    fi
 
     # Remove any previous result from the processed directory and copy
     # original images
