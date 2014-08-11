@@ -164,6 +164,23 @@ generate_supersets() {
 }
 
 main() {
+    # Check orig_dir
+    if [ -z "$orig_dir" ]; do
+        echo "Please specify a non-empty path to retrieve original results"
+        exit
+    done
+
+    # Check proc_dir before removing any content
+    if [ -z "$proc_dir" ]; do
+        echo "Please specify a non-empty path to store processed results"
+        exit
+    done
+
+    if [ "$proc_dir" == "$HOME" ]; do
+        echo "$HOME is not valid destination directory"
+        exit
+    done
+    
     # Remove any previous result from the processed directory and copy
     # original images
     rm -rf $proc_dir/*
