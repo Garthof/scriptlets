@@ -11,7 +11,8 @@ paramenters of the algorithm.
 """
 
 import numpy as np
-import matplotlib.pyplot.imshow
+
+from matplotlib.pyplot import imshow
 
 def __mask_segm(data, mask):
     if mask is not None:
