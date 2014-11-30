@@ -1,12 +1,9 @@
 import random
 
-def sample_population(event_list, weighted_labels):
+def sample_population(event_list):
     """ Returns a list containing one tuple (sample, label) for each of the lists in event_list.
         The samples are selected so the proportion of associated labels in the final result
         respects the description in weighted_labels.
-
-        @param event_list a list of lists, each sublist containing tuples (event, label)
-        @param weighted_labels a list of tuples (label, weight)
     """
     selected_events = []
     used_labels = []
@@ -87,7 +84,7 @@ if __name__ == "__main__":
     print()
 
     # Compute and print selection of events
-    selected_events = sample_population(event_list, weighted_labels)
+    selected_events = sample_population(event_list)
     print("Selected events: {}\n".format(sorted(selected_events)))
 
     # Print proportion of labels for the selected events
